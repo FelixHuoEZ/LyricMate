@@ -8,7 +8,7 @@
 @MainActor
 protocol LyricProvider {
     var providerName: String { get }
-    
+
     @MainActor
     func fetchNetworkLyrics(trackName: String, trackID: String, currentlyPlayingArtist: String?, currentAlbumName: String? ) async throws -> NetworkFetchReturn
 

@@ -16,7 +16,7 @@ struct LyricLine: Decodable, Hashable, Sendable {
         case startTimeMS = "startTimeMs"
         case words
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let time = try container.decode(String.self, forKey: .startTimeMS)
@@ -26,7 +26,7 @@ struct LyricLine: Decodable, Hashable, Sendable {
         self.startTimeMS = milliseconds
         self.words = try container.decode(String.self, forKey: .words)
     }
-    
+
     init(startTime: TimeInterval, words: String) {
         self.startTimeMS = startTime
         self.words = words

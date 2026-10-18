@@ -14,7 +14,7 @@ public class SongObject: NSManagedObject {
     enum CodingKeys: String, CodingKey {
         case lines, language, syncType
     }
-    
+
     convenience init(from LocalLyrics: [LyricLine], with context: NSManagedObjectContext, trackID: String, trackName: String) {
         self.init(context: context)
         self.id = trackID
@@ -28,7 +28,7 @@ public class SongObject: NSManagedObject {
             self.lyricsTimestamps = []
             self.lyricsWords = []
         }
-        
+
     }
 
     @MainActor
