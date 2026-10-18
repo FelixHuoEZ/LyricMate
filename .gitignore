@@ -1,0 +1,15 @@
+.DS_Store
+.build/
+.swiftpm/
+dist/
+DerivedData/
+*.dSYM/
+*.log
+*.xcresult/
+.env
+.env.*
+*.p12
+*.mobileprovision
+private/
+diagnostics/
+gitleaks-report.*

@@ -1,0 +1,45 @@
+# LyricMate Alpha
+
+作者：我和 codex
+
+macOS 菜单栏与透明双行悬浮歌词工具，跟随已经运行的 Spotify 桌面客户端。
+
+这是独立开发中的源码 Alpha，不是 Lyric Fever 官方发行版，也不是 Spotify 或歌词平台的官方产品。部分代码基于 [Lyric Fever](https://github.com/aviwad/LyricFever)，保留原 MIT 许可与第三方署名。当前没有官方安装包、自动更新或稳定性承诺。
+
+## 功能
+
+- 菜单栏歌词、透明双行浮层、智能换行、向上换句与开唱提示。
+- 可选歌手搜索、仅歌名补搜、匹配评分、候选先载入后升级、人工选择与偏移重核验。
+- 播放／暂停、上一首／下一首与菜单中的前后跳转；浮层控件仅悬停时显示。
+- 本地 LRC、设置记忆、备份与有界本机诊断。不附带歌词库或账户凭据。
+
+匹配分不是同步准确率；临时匹配可能是错误录音。逐字演唱、重音／吸气标记不在当前范围内。
+
+## 构建与测试
+
+目前构建目标仅为 Apple Silicon、macOS 15 及以上，需安装完整 Xcode 并使 `xcrun --show-sdk-path` 可用。Intel 和更早系统未验收。独立构建不依赖原版 Xcode 工程或第三方编译宏。
+
+```sh
+swift test -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
+bash scripts/build-lyric-preview.sh
+python3 scripts/public-source.py check
+python3 scripts/public-source.py archive
+```
+
+应用输出为 `dist/LyricMate Alpha.app`，源码归档为 `dist/LyricMate-source.tar.gz`。脚本只构建，不安装、不启动、不覆盖已有输出；再次构建前将旧输出移走。构建仅使用本机 ad-hoc 签名，不是 Developer ID、公证或 Gatekeeper 发行验收；不建议把此产物直接发给普通用户。
+
+## 使用与权限
+
+1. 自行启动 Spotify 和所构建的 Alpha。
+2. 点击“启用只读跟随 Spotify”，自行决定是否授予 macOS 自动化权限。
+3. 打开悬浮歌词或手动搜索；可以只填歌名。所有播放控制必须明确点击。
+
+不会自行登录、读取 Spotify Cookie 或启动 Spotify；失去播放状态后停止实时高亮。初始默认来源是 LRCLIB；其他适配器需在源管理中主动添加，平台接口和内容权利仍有发行限制。详情见 [来源说明](docs/sources.md)。
+
+本地测试标识为 `local.lyricmate.alpha`，与其他版本隔离，不自动迁移其配置。正式发行标识、公开维护身份和反馈仓库将在发行前确定；内部目录／模块保留部分历史命名，以降低行为变更风险。
+
+## 隐私与维护
+
+请阅读 [隐私说明](docs/privacy.md)、[安全边界](SECURITY.md)、[需求与设计](docs/requirements-and-design.md) 和 [发布检查](docs/release-checklist.md)。应用本身没有上传源码或诊断的功能。反馈缺陷时仅提供脱敏步骤、版本和错误类别，勿附账户令牌、个人设置、播放记录或完整歌词。
+
+代码适用 [MIT](LICENSE) 及 [第三方声明](NOTICE.md)；歌词、歌曲、商标与服务不因代码许可证获得额外授权。
