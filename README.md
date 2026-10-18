@@ -1,5 +1,7 @@
 # LyricMate Alpha
 
+<img src="LyricPreview/Resources/LyricMateIcon-1024.png" width="96" height="96" alt="LyricMate app icon">
+
 English | [简体中文](README.zh-CN.md)
 
 Authors: [FelixHuoEZ](https://github.com/FelixHuoEZ) and codex.
@@ -31,6 +33,7 @@ The current target is Apple Silicon on macOS 15 or later. Install full Xcode and
 swift test -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
 python3 scripts/check-localization.py
 bash scripts/build-lyric-preview.sh
+bash scripts/test-lyricmate-icon.sh "dist/LyricMate Alpha.app"
 python3 scripts/public-source.py check
 python3 scripts/public-source.py archive
 ```
@@ -54,3 +57,5 @@ Searches send the entered title, artist and necessary candidate identifiers to t
 Additional documentation, currently in Chinese: [privacy](docs/privacy.md), [source policy](docs/sources.md), [security](SECURITY.md), [requirements and design](docs/requirements-and-design.md), and [release checklist](docs/release-checklist.md). When reporting a bug, share only redacted steps, version and error categories, not account tokens, personal settings, playback records or full lyrics.
 
 Code is covered by [MIT](LICENSE) and the [third-party notices](NOTICE.md). These licenses do not grant rights to lyrics, recordings, trademarks or external services. Public distribution and signed-installer acceptance remain separate release gates.
+
+The original [app icon](docs/app-icon.md) is included in source builds. No installed-app screenshots, personal settings or playback records are bundled with it.

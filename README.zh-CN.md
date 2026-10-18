@@ -1,5 +1,7 @@
 # LyricMate Alpha
 
+<img src="LyricPreview/Resources/LyricMateIcon-1024.png" width="96" height="96" alt="LyricMate 应用图标">
+
 [English](README.md) | 简体中文
 
 作者：[FelixHuoEZ](https://github.com/FelixHuoEZ) and codex。
@@ -31,6 +33,7 @@ macOS 菜单栏与透明双行悬浮歌词工具，跟随已经运行的 Spotify
 swift test -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
 python3 scripts/check-localization.py
 bash scripts/build-lyric-preview.sh
+bash scripts/test-lyricmate-icon.sh "dist/LyricMate Alpha.app"
 python3 scripts/public-source.py check
 python3 scripts/public-source.py archive
 ```
@@ -54,3 +57,5 @@ python3 scripts/public-source.py archive
 请阅读 [隐私说明](docs/privacy.md)、[来源说明](docs/sources.md)、[安全边界](SECURITY.md)、[需求与设计](docs/requirements-and-design.md) 和 [发布检查](docs/release-checklist.md)。反馈缺陷时仅提供脱敏步骤、版本和错误类别，勿附账户令牌、个人设置、播放记录或完整歌词。
 
 代码适用 [MIT](LICENSE) 及 [第三方声明](NOTICE.md)；歌词、歌曲、商标与服务不因代码许可证获得额外授权。公开发行与签名安装包仍需独立验收。
+
+源码构建包含原创[应用图标](docs/app-icon.md)，不附带已安装应用的截图、个人设置或播放记录。

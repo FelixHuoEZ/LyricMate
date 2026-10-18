@@ -9,6 +9,21 @@ source = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(source)
 
 class SourceExportTests(unittest.TestCase):
+    def test_only_named_app_icons_are_permitted(self):
+        for name in ['LyricPreview/Resources/LyricMate.icns',
+                     'LyricPreview/Resources/LyricMateIcon-1024.png',
+                     'docs/app-icon.md', 'scripts/build-lyricmate-icon.sh',
+                     'scripts/test-lyricmate-icon.sh']:
+            self.assertTrue(source.permitted(name))
+        for name in ['LyricPreview/Resources/private.png',
+                     'LyricPreview/Resources/Other.icns',
+                     'LyricPreview/Resources/settings.plist',
+                     'LyricPreview/Resources/backup.json',
+                     'LyricPreview/Resources/.DS_Store',
+                     'LyricPreview/Resources/subdir/LyricMate.icns',
+                     'docs/acceptance/install.json']:
+            self.assertFalse(source.permitted(name))
+
     def fixture(self, root):
         (root / 'README.md').write_text('Synthetic project\n')
         (root / 'release-files.txt').write_text('README.md\nrelease-files.txt\n')

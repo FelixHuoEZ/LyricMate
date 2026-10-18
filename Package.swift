@@ -20,7 +20,7 @@ let package = Package(
             "LyricProvider/CustomHTTP/CustomHTTPSourceProvider.swift", "LyricProvider/CustomHTTP/LyricSourceRegistry.swift", "LyricProvider/CustomHTTP/PlatformLyricSource.swift"
         ]),
         .testTarget(name: "LyricFeverCoreTests", dependencies: ["LyricFeverCore"], path: "Tests/LyricFeverCoreTests"),
-        .target(name: "LyricPreviewPolicy", dependencies: ["LyricMateLocalization"], path: "LyricPreview", exclude: ["Info.plist", "ReadOnlySpotifyReader.swift", "SpotifyPlaybackControl.swift", "LyricPreviewApp.swift", "PreviewSourcesView.swift", "PreviewFilesView.swift", "PreviewLibraryView.swift", "PreviewDesktopPresentation.swift", "PreviewFloatingPanel.swift", "PreviewWrappedTextView.swift"],
+        .target(name: "LyricPreviewPolicy", dependencies: ["LyricMateLocalization"], path: "LyricPreview", exclude: ["Info.plist", "Resources", "ReadOnlySpotifyReader.swift", "SpotifyPlaybackControl.swift", "LyricPreviewApp.swift", "PreviewSourcesView.swift", "PreviewFilesView.swift", "PreviewLibraryView.swift", "PreviewDesktopPresentation.swift", "PreviewFloatingPanel.swift", "PreviewWrappedTextView.swift"],
                 sources: ["PlaybackReadGate.swift", "PlaybackControlPolicy.swift", "PlaybackControlDiagnostics.swift", "PlaybackReadRecovery.swift", "PlaybackReadDiagnostics.swift", "PlaybackProcessDiscovery.swift", "PlaybackMetadataCache.swift", "PlaybackReadBudget.swift", "PlaybackIncidentRecorder.swift", "PlaybackIncidentStore.swift", "PreviewPresentationSettings.swift", "PreviewFloatingLayoutPolicy.swift", "PreviewLyricWrapping.swift"]),
         .testTarget(name: "LyricPreviewPolicyTests", dependencies: ["LyricPreviewPolicy", "LyricFeverCore"], path: "Tests/LyricPreviewPolicyTests")
     ]

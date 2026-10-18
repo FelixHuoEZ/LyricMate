@@ -12,8 +12,11 @@ ROOT = Path(__file__).resolve().parent.parent
 GENERATED = {'.git', '.build', '.swiftpm', 'dist', '__pycache__'}
 ROOT_FILES = {'LICENSE', 'NOTICE.md', 'README.md', 'README.zh-CN.md', 'SECURITY.md', 'Package.swift',
               '.gitignore', 'release-files.txt'}
-DOCS = {'privacy.md', 'sources.md', 'requirements-and-design.md', 'release-checklist.md'}
-SCRIPTS = {'build-lyric-preview.sh', 'public-source.py', 'test-public-source.py', 'check-localization.py'}
+DOCS = {'privacy.md', 'sources.md', 'requirements-and-design.md', 'release-checklist.md', 'app-icon.md'}
+SCRIPTS = {'build-lyric-preview.sh', 'public-source.py', 'test-public-source.py', 'check-localization.py',
+           'build-lyricmate-icon.sh', 'test-lyricmate-icon.sh'}
+ICON_ASSETS = {'LyricPreview/Resources/LyricMateIcon-1024.png',
+               'LyricPreview/Resources/LyricMate.icns'}
 
 def permitted(name):
     parts = PurePosixPath(name).parts
@@ -33,7 +36,7 @@ def permitted(name):
         return name == 'Localization/L10n.swift' or (len(parts) == 4 and parts[1] == 'Resources'
             and parts[2] in {'en.lproj', 'zh-Hans.lproj'} and parts[3] in {'Localizable.strings', 'InfoPlist.strings'})
     if parts[0] in {'LyricFever', 'LyricPreview'}:
-        return name.endswith('.swift') or name == 'LyricPreview/Info.plist'
+        return name.endswith('.swift') or name == 'LyricPreview/Info.plist' or name in ICON_ASSETS
     return len(parts) == 3 and parts[0] == 'Tests' and parts[1] in {
         'LyricFeverCoreTests', 'LyricPreviewPolicyTests', 'LyricMateLocalizationTests'} and name.endswith('.swift')
 
