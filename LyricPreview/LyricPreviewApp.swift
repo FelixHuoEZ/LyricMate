@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import AppKit
 import SwiftUI
 import Observation
@@ -19,7 +22,7 @@ final class PreviewController {
     var canControlPlayback: Bool {
         allowsPlaybackControl && session.playbackAvailable && session.playback?.isValid == true && !controlBusy
     }
-    private(set) var connection = "只读接入未启用；可以先搜索、预览歌词。"
+    private(set) var connection = L10n.text("Spotify following is off. You can search and preview lyrics first.")
     var connecting: Bool { readGate.pending != nil }
     var enabled: Bool { readGate.enabled }
     private(set) var readStage = ""
@@ -92,7 +95,7 @@ final class PreviewController {
         let sources = LyricSourceRegistry(store: LyricSourceStore(defaults: defaults), makeProvider: makeProvider)
         if installPlatformSources {
             do { try sources.store.installPlatformDefaults() }
-            catch { sourceSetupMessage = "未自动添加平台来源：\(error.localizedDescription)；原配置已保留，可在源管理手动添加。" }
+            catch { sourceSetupMessage = L10n.text("Platform sources were not added automatically: %1$@. Existing settings were kept; add sources manually if needed.", String(describing: error.localizedDescription)) }
         }
         registry = sources
         let memory = PreviewRecordingPreferences(defaults: defaults)
@@ -107,7 +110,7 @@ final class PreviewController {
         self.allowsPlaybackControl = allowsPlaybackControl ?? allowsPlaybackRead
         self.playbackControl = playbackControl ?? SpotifyPlaybackControl(queue: reader.serializedQueue)
         self.incidentRecorder = incidentRecorder
-        if incidentRecorder != nil { automaticDiagnosticsMessage = "故障现场自动保存在本机；最多 20 份、7 天。" }
+        if incidentRecorder != nil { automaticDiagnosticsMessage = L10n.text("Incident diagnostics stay on this Mac: up to 20 records for 7 days.") }
         self.processLookup = processLookup
         session = LyricPreviewSession(providers: [base], providerSnapshot: { [base] + sources.enabledProviders }, preferences: memory, localLyrics: local)
         let arguments = ProcessInfo.processInfo.arguments
@@ -124,9 +127,9 @@ final class PreviewController {
         readDiagnostics.reset()
         processDiscovery.reset()
         readRecovery.reset()
-        readStage = "等待最小播放状态查询"
+        readStage = L10n.text("Waiting for the minimal playback-state query")
         session.followsPlayback = true
-        connection = "正在只读接入；如出现系统权限提示，请由你决定。"
+        connection = L10n.text("Connecting read-only. If macOS asks for permission, you decide whether to allow it.")
     }
 
     func restoreStartupConnection() {
@@ -135,8 +138,8 @@ final class PreviewController {
         guard allowsPlaybackRead, presentationSettings.resumesSpotify, !enabled, readGate.enable() else { return }
         allowsPermissionPrompt = false
         session.followsPlayback = true
-        readStage = "恢复上次连接；不请求新权限"
-        connection = "正在恢复上次的 Spotify 连接；只读取已运行的播放器。"
+        readStage = L10n.text("Restoring the previous connection without requesting new permission")
+        connection = L10n.text("Restoring the Spotify connection; only an already-running player will be read.")
     }
 
 #if PREVIEW_ACCEPTANCE
@@ -149,8 +152,8 @@ final class PreviewController {
             recordTraceIfChanged()
             if let status = incidentRecorder?.store.status {
                 automaticDiagnosticsMessage = status.failures > 0 || status.droppedPending > 0
-                    ? "自动诊断留存不完整；播放跟随不受写盘失败影响。"
-                    : "故障现场自动保存在本机；最多 20 份、7 天。"
+                    ? L10n.text("Automatic diagnostic retention is incomplete; disk-write failures do not interrupt playback following.")
+                    : L10n.text("Incident diagnostics stay on this Mac: up to 20 records for 7 days.")
             }
             do { try await Task.sleep(for: .milliseconds(500)) }
             catch { break }
@@ -169,15 +172,15 @@ final class PreviewController {
     private func pollPlaybackIfReady() {
         if controlGate.expire(), let request = controlGate.pending {
             controlDiagnostics.mark(request.token, stage: .deadline, status: .expired)
-            controlMessage = "控制响应超时；结果未确认，等待原操作返回，不自动重试。"
+            controlMessage = L10n.text("Control timed out. The result is unconfirmed; waiting for the original operation without retrying.")
         }
         if enabled {
             if let request = readGate.pending {
                 if readGate.expire() {
                     readDiagnostics.recordDeadline(for: request.token, elapsedMS: request.timeoutMS)
                     connection = request.requiresProbe
-                        ? "初次只读接入超时；高亮已停止，不自动重试。"
-                        : "只读查询超时；高亮已停止，等待本次查询返回后评估有限恢复。"
+                        ? L10n.text("Initial read-only connection timed out. Highlighting stopped; no automatic retry.")
+                        : L10n.text("Read-only query timed out. Highlighting stopped; bounded recovery will be considered after this query returns.")
                     session.updatePlayback(nil)
                     finishControlReadback(for: request.token, status: .expired)
                 }
@@ -186,7 +189,7 @@ final class PreviewController {
             } else if readRecovery.isExpired() {
                 incidentRecorder?.endRecovery(.windowExpired)
                 readGate.stop()
-                connection = "有限恢复已到 10 秒上限；高亮已停止，需要手动重新连接。"
+                connection = L10n.text("Bounded recovery reached its 10-second limit. Highlighting stopped; reconnect manually.")
                 session.updatePlayback(nil)
             } else if readRecovery.isReady(), let process = locateSpotify() {
                 guard let request = readGate.begin() else { return }
@@ -240,16 +243,16 @@ final class PreviewController {
                                 // Start the window at the timeout, not whenever a blocked event eventually returns.
                                 if case .retry = self.readRecovery.failed(failure, initialRead: request.requiresProbe, at: request.deadline),
                                    !self.readRecovery.isExpired(at: now), self.readGate.resumeAfterTimeout(request.token) {
-                                    self.connection = "迟到结果已丢弃；旧查询已结束，有限恢复中（\(self.readRecovery.retryCount)/2），暂不高亮。"
+                                    self.connection = L10n.text("Discarded a late result. The old query ended; bounded recovery (%1$@/2), with highlighting paused.", String(describing: self.readRecovery.retryCount))
                                     incidentRecorder?.outcome(request.token, .retryScheduled)
                                     return
                                 }
                             }
                             self.readGate.stop()
                             let reason: String
-                            if case .failure(let error) = result { reason = (error.errorDescription ?? "只读查询失败。") + " " }
+                            if case .failure(let error) = result { reason = (error.errorDescription ?? L10n.text("Read-only query failed.")) + " " }
                             else { reason = "" }
-                            self.connection = reason + "迟到结果已丢弃；无法安全恢复或已达恢复上限，请手动重新连接。"
+                            self.connection = reason + L10n.text("Discarded a late result. Recovery is unsafe or exhausted; reconnect manually.")
                             incidentRecorder?.outcome(request.token, .stopped)
                             return
                         }
@@ -260,7 +263,7 @@ final class PreviewController {
                                 incidentRecorder?.outcome(request.token, .ignored)
                                 return
                             }
-                            self.connection = snapshot.isPlaying ? "只读跟随 Spotify · 播放中" : "只读跟随 Spotify · 已暂停"
+                            self.connection = snapshot.isPlaying ? L10n.text("Following Spotify read-only · Playing") : L10n.text("Following Spotify read-only · Paused")
                             self.session.updatePlayback(snapshot)
                             readbackStatus = .succeeded
                             incidentRecorder?.outcome(request.token, .accepted)
@@ -268,11 +271,11 @@ final class PreviewController {
                             self.session.updatePlayback(nil)
                             switch self.readRecovery.failed(error, initialRead: request.requiresProbe) {
                             case .retry(let delay):
-                                self.connection = "只读查询短暂中断；\(delay.components.seconds) 秒后重新核验进程（\(self.readRecovery.retryCount)/2），暂不高亮。"
+                                self.connection = L10n.text("Read-only query interrupted. Rechecking the process in %1$@ seconds (%2$@/2); highlighting paused.", String(describing: delay.components.seconds), String(describing: self.readRecovery.retryCount))
                                 incidentRecorder?.outcome(request.token, .retryScheduled)
                             case .stop:
                                 self.readGate.stop()
-                                self.connection = (error.errorDescription ?? "只读接入失败。") + " 已停止，不自动重试。"
+                                self.connection = (error.errorDescription ?? L10n.text("Read-only connection failed.")) + L10n.text(" Stopped; no automatic retry.")
                                 incidentRecorder?.outcome(request.token, .stopped)
                             }
                         }
@@ -283,7 +286,7 @@ final class PreviewController {
         if !enabled, let refresh = controlReadback {
             controlDiagnostics.mark(refresh.request.token, stage: .readbackWait, status: .unavailable)
             controlReadback = nil
-            controlMessage = "指令已返回，但读取连接不可用；播放结果尚未确认。"
+            controlMessage = L10n.text("Command returned, but the read connection is unavailable. Playback result is unconfirmed.")
         }
     }
 
@@ -292,14 +295,14 @@ final class PreviewController {
         controlDiagnostics.mark(refresh.request.token, stage: .readback, status: status)
         controlReadback = nil
         controlMessage = status == .succeeded
-            ? "已刷新 Spotify 播放状态；按钮以实时读取为准。"
-            : "指令已返回，但状态回读未成功；播放结果尚未确认，不重发指令。"
+            ? L10n.text("Spotify playback state refreshed; controls reflect the latest read.")
+            : L10n.text("Command returned, but state could not be read back. Playback result is unconfirmed; the command was not resent.")
         recordTraceIfChanged()
     }
 
     func controlAccessibilityLabel(_ command: PlaybackControlCommand) -> String {
         if pendingControlCommand == command { return controlMessage }
-        return command == .togglePlayback ? (session.playback?.isPlaying == true ? "暂停 Spotify" : "播放 Spotify") : command.title
+        return command == .togglePlayback ? (session.playback?.isPlaying == true ? L10n.text("Pause Spotify") : L10n.text("Play Spotify")) : command.title
     }
 
     func performPlaybackCommand(_ command: PlaybackControlCommand) {
@@ -307,7 +310,7 @@ final class PreviewController {
         guard let process = locateSpotify(),
               let request = controlGate.begin(command, process: process, trackID: snapshot.trackID) else { return }
         controlDiagnostics.begin(request)
-        controlMessage = "正在发送：\(command.title)…"
+        controlMessage = L10n.text("Sending: %1$@...", String(describing: command.title))
         playbackControl.send(request, diagnostics: controlDiagnostics) { [weak self] result in
             Task { @MainActor in
                 guard let self, self.controlGate.finish(request.token) else { return }
@@ -316,12 +319,12 @@ final class PreviewController {
                 case .success:
                     guard self.allowsPlaybackRead, self.enabled else {
                         self.controlDiagnostics.mark(request.token, stage: .readbackWait, status: .unavailable)
-                        self.controlMessage = "指令已返回；读取连接未启用，播放状态尚未确认。"
+                        self.controlMessage = L10n.text("Command returned; playback following is off. Playback state is unconfirmed.")
                         return
                     }
                     self.controlReadback = .init(request: request)
                     self.controlDiagnostics.mark(request.token, stage: .readbackWait, status: .started)
-                    self.controlMessage = "正在核对 Spotify 播放状态…"
+                    self.controlMessage = L10n.text("Checking Spotify playback state...")
                     self.pollPlaybackIfReady()
                 case .failure(let failure): self.controlMessage = failure.message
                 }
@@ -350,14 +353,14 @@ final class PreviewController {
         case .waiting:
             outcome = "waiting"
             target = nil
-            connection = "暂时未确认 Spotify 进程；正在短暂复核，高亮已停止。"
+            connection = L10n.text("Spotify process temporarily unconfirmed. Rechecking briefly; highlighting stopped.")
             session.updatePlayback(nil)
         case .unavailable:
             outcome = "unavailable"
             target = nil
             readGate.stop()
             incidentRecorder?.endRecovery(.stopped)
-            connection = "连续 2 秒未确认 Spotify 进程；已停止，不启动或控制它。"
+            connection = L10n.text("Spotify process was unconfirmed for 2 seconds. Stopped without launching or controlling it.")
             session.updatePlayback(nil)
         }
         let key = "\(listed)|\(String(describing: revalidated))|\(outcome)"
@@ -383,8 +386,8 @@ final class PreviewController {
             try encoder.encode(readDiagnostics.failures).write(to: directory.appendingPathComponent("read-failures.json"), options: .atomic)
             try encoder.encode(processDiagnostics).write(to: directory.appendingPathComponent("process-diagnostics.json"), options: .atomic)
             try encoder.encode(controlDiagnostics.entries).write(to: directory.appendingPathComponent("control-diagnostics.json"), options: .atomic)
-            traceMessage = "已保存本机诊断；含歌名、歌手、专辑、歌曲标识与进程信息，分享前请审查。不含歌词正文或凭据。"
-        } catch { traceMessage = "诊断记录保存失败。" }
+            traceMessage = L10n.text("Diagnostics saved locally. They include title, artist, album, track ID and process information; review before sharing. No lyric text or credentials.")
+        } catch { traceMessage = L10n.text("Could not save diagnostics.") }
     }
 
     private func recordTraceIfChanged(force: Bool = false) {
@@ -450,8 +453,8 @@ struct LyricPreviewView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(PreviewLyricPresentation.appName).font(.custom("Avenir Next Demi Bold", size: 12)).tracking(3)
-                    Text(session.playback?.trackName ?? "歌词预览工作台").font(.custom("Avenir Next", size: 28)).bold()
-                    Text(session.playback.map { "\($0.artistName) · \($0.albumName)" } ?? "独立测试版 · 不修改正式应用")
+                    Text(session.playback?.trackName ?? L10n.text("Lyrics workspace")).font(.custom("Avenir Next", size: 28)).bold()
+                    Text(session.playback.map { "\($0.artistName) · \($0.albumName)" } ?? L10n.text("Standalone alpha · Existing applications are unchanged"))
                         .font(.caption).foregroundStyle(ink.opacity(0.7))
                 }
                 Spacer()
@@ -459,32 +462,32 @@ struct LyricPreviewView: View {
                     Text(controller.connection).font(.caption)
                     if !controller.readStage.isEmpty { Text(controller.readStage).font(.caption2.monospaced()).foregroundStyle(.secondary) }
                     if !controller.enabled && controller.allowsPlaybackRead {
-                        Button("启用只读跟随 Spotify") { controller.requestPermission() }
+                        Button(L10n.text("Enable read-only Spotify following")) { controller.requestPermission() }
                             .disabled(controller.connecting)
                     }
-                    Text("无登录凭据 · 仅点击按钮控制播放 · 本地导入不联网").font(.caption2).foregroundStyle(.secondary)
+                    Text(L10n.text("No login credentials · Playback changes only on clicks · Local imports stay offline")).font(.caption2).foregroundStyle(.secondary)
                     Text(Self.versionLabel).font(.caption2.monospaced()).accessibilityIdentifier("preview-version")
                     if let desktop {
-                        Button(desktop.floatingVisible ? "隐藏悬浮歌词" : "显示悬浮歌词", systemImage: "rectangle.on.rectangle") { desktop.toggleFloating() }
+                        Button(desktop.floatingVisible ? L10n.text("Hide floating lyrics") : L10n.text("Show floating lyrics"), systemImage: "rectangle.on.rectangle") { desktop.toggleFloating() }
                     }
                 }
             }.padding(24)
             Divider()
             HSplitView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("01 / 查找录音版本").font(.headline)
-                    TextField("歌名", text: $session.trackQuery).textFieldStyle(.roundedBorder).accessibilityLabel("搜索歌名")
+                    Text(L10n.text("01 / Find a recording version")).font(.headline)
+                    TextField(L10n.text("Song title"), text: $session.trackQuery).textFieldStyle(.roundedBorder).accessibilityLabel(L10n.text("Search song title"))
                         .focused($queryFocus, equals: .track)
-                    TextField("歌手（可选）", text: $session.artistQuery).textFieldStyle(.roundedBorder).accessibilityLabel("搜索歌手（可选）")
+                    TextField(L10n.text("Artist (optional)"), text: $session.artistQuery).textFieldStyle(.roundedBorder).accessibilityLabel(L10n.text("Search artist (optional)"))
                         .focused($queryFocus, equals: .artist)
                     HStack {
-                        Button(session.isSearching ? "搜索中…" : "搜索歌词") { session.search() }
+                        Button(session.isSearching ? L10n.text("Searching sources...") : L10n.text("Search lyrics")) { session.search() }
                             .keyboardShortcut(.return, modifiers: .command)
                             .disabled(session.isSearching || session.trackQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         if session.isSearching { ProgressView().controlSize(.small) }
                     }
-                    Button("管理歌词源") { openSources() }.keyboardShortcut("s", modifiers: [.command, .shift])
-                    Button("本地歌词与备份") { openFiles() }.keyboardShortcut("f", modifiers: [.command, .shift])
+                    Button(L10n.text("Manage lyric sources")) { openSources() }.keyboardShortcut("s", modifiers: [.command, .shift])
+                    Button(L10n.text("Local lyrics and backups")) { openFiles() }.keyboardShortcut("f", modifiers: [.command, .shift])
                     Text(session.status).font(.caption).foregroundStyle(.secondary)
                     if !session.matchingMessage.isEmpty { Text(session.matchingMessage).font(.caption).foregroundStyle(.secondary) }
                     ForEach(session.sourceErrors, id: \.self) { Text($0).font(.caption).foregroundStyle(accent) }
@@ -496,23 +499,23 @@ struct LyricPreviewView: View {
                                         Text(result.songName).font(.headline)
                                         Text(result.artistName).font(.subheadline)
                                         if !session.artistQuery.isEmpty, PreviewRecordingMatcher.artistRelation(result.artistName, session.artistQuery) == nil {
-                                            Text("歌手不同 / 其他翻唱：临时匹配，时间轴可能不适合当前录音")
+                                            Text(L10n.text("Different artist / cover: provisional match; timing may not fit this recording"))
                                                 .font(.caption2).foregroundStyle(accent)
                                         }
                                         let match = session.matchAssessment(for: result)
-                                        Text("匹配分 \(match.score)/100\(session.recommendedID == result.id ? " · 推荐" : "")")
+                                        Text(L10n.text("Match score %1$@/100%2$@", String(describing: match.score), String(describing: session.recommendedID == result.id ? L10n.text(" · Recommended") : "")))
                                             .font(.caption.monospaced()).foregroundStyle(accent)
-                                            .help(match.explanation + "；分数不是同步准确率。")
-                                        if result.requiresManualSelection { Text("来源录音资料未核实，可临时显示，不自动记忆").font(.caption2).foregroundStyle(accent) }
+                                            .help(match.explanation + L10n.text("; the score is not a synchronization accuracy percentage."))
+                                        if result.requiresManualSelection { Text(L10n.text("Recording metadata is unverified; preview only, without automatic saving")).font(.caption2).foregroundStyle(accent) }
                                         if result.requiresManualSelection, session.playbackAvailable,
                                            result.sourceSongID == AMLLSource.recordingID(session.playback?.trackID) {
-                                            Text("Spotify 录音 ID 一致；时长与听感仍未验证").font(.caption2).foregroundStyle(accent)
+                                            Text(L10n.text("Spotify recording IDs match; duration and audible synchronization remain unverified")).font(.caption2).foregroundStyle(accent)
                                         }
                                         if PreviewRecordingMatcher.artistRelation(result.artistName, session.artistQuery) == .searchLabel {
-                                            Text("歌手搜索别名候选，录音身份未确认").font(.caption2).foregroundStyle(accent)
+                                            Text(L10n.text("Artist search-alias candidate; recording identity is unconfirmed")).font(.caption2).foregroundStyle(accent)
                                         }
-                                        Text(result.albumName.isEmpty ? "专辑未知" : result.albumName).font(.caption).lineLimit(2)
-                                        Text("\(result.lyricType) · \(result.durationMS.map { Self.time(Double($0)) } ?? "时长未知") · \(result.lyrics.count) 行")
+                                        Text(result.albumName.isEmpty ? L10n.text("Unknown album") : result.albumName).font(.caption).lineLimit(2)
+                                        Text(L10n.text("%1$@ · %2$@ · %3$@ lines", String(describing: result.lyricType), String(describing: result.durationMS.map { Self.time(Double($0)) } ?? L10n.text("Unknown duration")), String(describing: result.lyrics.count)))
                                             .font(.caption.monospaced())
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading).padding(12)
@@ -523,14 +526,14 @@ struct LyricPreviewView: View {
                         }
                     }
                     Spacer(minLength: 0)
-                    Text("找到有效时间轴歌词即按当前最高分先载入，后到更高分自动替换，包括 100 分；同分按来源顺序。人工选择、偏移和已核验记忆优先。分数不是同步准确率，低分或版本未确认的候选仅临时显示。")
+                    Text(L10n.text("Valid timed lyrics load at the highest score available so far; higher scores replace them, including 100. Source order breaks ties. Manual choices, offsets and revalidated saved choices take priority. A score is not synchronization accuracy; low-scoring or unverified versions are provisional."))
                         .font(.caption2).foregroundStyle(.secondary)
                 }.padding(20).frame(minWidth: 280, idealWidth: 310, maxWidth: 350)
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("02 / 逐行跟随").font(.headline)
+                        Text(L10n.text("02 / Follow line by line")).font(.headline)
                         Spacer()
-                        Toggle("自动滚动", isOn: $autoScroll).toggleStyle(.checkbox)
+                        Toggle(L10n.text("Auto-scroll"), isOn: $autoScroll).toggleStyle(.checkbox)
                     }
                     if let selected = session.selected {
                         let activeIndex = session.activeIndex
@@ -549,7 +552,7 @@ struct LyricPreviewView: View {
                                         .padding(.vertical, 5).id(index)
                                         .accessibilityElement(children: .ignore)
                                         .accessibilityAddTraits(.isStaticText)
-                                        .accessibilityLabel("\(activeIndex == index ? "当前行" : "歌词行") \(index + 1)，\(Self.time(line.startTimeMS))，\(line.words)")
+                                        .accessibilityLabel("\(activeIndex == index ? L10n.text("Current line") : L10n.text("Lyric line")) \(index + 1)，\(Self.time(line.startTimeMS))，\(line.words)")
                                     }
                                 }.padding(.vertical, 80)
                             }
@@ -570,47 +573,47 @@ struct LyricPreviewView: View {
                     }
                     Divider()
                     HStack {
-                        Toggle("实时跟随", isOn: $session.followsPlayback).toggleStyle(.switch)
+                        Toggle(L10n.text("Follow playback"), isOn: $session.followsPlayback).toggleStyle(.switch)
                         Text("\(Self.time(session.displayedPositionMS)) / \(Self.time(Double(session.displayedDurationMS ?? 0)))")
                             .monospacedDigit()
                         Spacer()
-                        Text(session.activeIndex.map { "当前第 \($0 + 1) 行" }
-                             ?? (session.followsPlayback && !session.playbackAvailable ? "无有效播放进度"
-                                 : session.selected == nil ? session.unselectedLyricsTitle : "尚未到第一行"))
+                        Text(session.activeIndex.map { L10n.text("Current line %1$@", String(describing: $0 + 1)) }
+                             ?? (session.followsPlayback && !session.playbackAvailable ? L10n.text("No valid playback position")
+                                 : session.selected == nil ? session.unselectedLyricsTitle : L10n.text("Before the first line")))
                             .font(.caption)
                     }
                     if !session.followsPlayback {
                         Slider(value: $session.previewPositionMS, in: 0...Double(max(1, session.displayedDurationMS ?? 300000)))
-                            .accessibilityLabel("预览游标（不改变 Spotify）")
-                        Text("手动游标仅用于检查呈现和回跳，不改变播放器。") .font(.caption2).foregroundStyle(.secondary)
+                            .accessibilityLabel(L10n.text("Preview position (does not change Spotify)"))
+                        Text(L10n.text("The manual cursor only checks display and seeking; it does not change the player.")) .font(.caption2).foregroundStyle(.secondary)
                     }
                     HStack {
-                        Text("歌词偏移 \(Int(session.offsetMS)) ms").font(.caption.monospaced()).frame(width: 145, alignment: .leading)
-                        Slider(value: $session.offsetMS, in: -10000...10000, step: 50).accessibilityLabel("歌词偏移")
-                        Button("归零") { session.offsetMS = 0 }.keyboardShortcut("0", modifiers: .command)
+                        Text(L10n.text("Lyric offset %1$@ ms", String(describing: Int(session.offsetMS)))).font(.caption.monospaced()).frame(width: 145, alignment: .leading)
+                        Slider(value: $session.offsetMS, in: -10000...10000, step: 50).accessibilityLabel(L10n.text("Lyric offset"))
+                        Button(L10n.text("Reset")) { session.offsetMS = 0 }.keyboardShortcut("0", modifiers: .command)
                     }
                     HStack {
-                        Button("提前 50 ms") { session.offsetMS -= 50 }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
-                        Button("延后 50 ms") { session.offsetMS += 50 }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
-                        Text("⌘⌥← / → 调整，⌘0 归零").font(.caption2).foregroundStyle(.secondary)
+                        Button(L10n.text("50 ms earlier")) { session.offsetMS -= 50 }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
+                        Button(L10n.text("50 ms later")) { session.offsetMS += 50 }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+                        Text(L10n.text("Command-Option-Left / Right to adjust; Command-0 to reset")).font(.caption2).foregroundStyle(.secondary)
                     }
                     HStack {
                         Text(session.memoryMessage).font(.caption2).foregroundStyle(.secondary)
                         Spacer()
-                        Button("忘记此歌曲") { session.forgetCurrentChoice() }.disabled(!session.playbackAvailable)
+                        Button(L10n.text("Forget this track")) { session.forgetCurrentChoice() }.disabled(!session.playbackAvailable)
                     }
-                    Text("正值延后高亮；这是逐行同步，不是逐字、重音或换气标注。") .font(.caption2).foregroundStyle(.secondary)
+                    Text(L10n.text("Positive offsets delay highlighting. Synchronization is line-by-line, not word timing, singing emphasis or breath notation.")) .font(.caption2).foregroundStyle(.secondary)
                 }.padding(24).frame(minWidth: 480)
             }
             Divider()
             HStack {
-                Text("LyricMate / 独立歌词工作台").font(.caption.monospaced())
+                Text(L10n.text("LyricMate / Lyrics workspace")).font(.caption.monospaced())
 #if PREVIEW_ACCEPTANCE
                 Text(verbatim: "Focus: \(String(describing: queryFocus)) / last: \(lastQueryFocus) / return: \(returnQueryFocus)").font(.caption2)
 #endif
                 Spacer()
                 Text(controller.traceMessage).font(.caption2)
-                Button("保存同步诊断") { controller.exportTrace() }
+                Button(L10n.text("Save sync diagnostics")) { controller.exportTrace() }
             }.padding(12)
             if !controller.automaticDiagnosticsMessage.isEmpty {
                 Text(controller.automaticDiagnosticsMessage).font(.caption2).foregroundStyle(.secondary).padding(.bottom, 8)
@@ -651,7 +654,7 @@ struct LyricPreviewView: View {
         queryFocusReturn.restore()
     }
     private static var versionLabel: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "开发构建"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? L10n.text("Development build")
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
         return "v\(version) (\(build))"
     }
@@ -669,7 +672,7 @@ struct LyricPreviewApp: App {
     @NSApplicationDelegateAdaptor(PreviewDesktopAppDelegate.self) private var appDelegate
     @State private var desktop = PreviewDesktopPresentation(controller: PreviewController(installPlatformSources: false, incidentRecorder: PlaybackIncidentRecorder()))
     var body: some Scene {
-        Window("LyricMate · 独立歌词工作台", id: "workbench") { PreviewWorkbenchRoot(presentation: desktop) }
+        Window(L10n.text("LyricMate · Lyrics workspace"), id: "workbench") { PreviewWorkbenchRoot(presentation: desktop) }
             .defaultSize(width: 1040, height: 760)
             .commands { PreviewDesktopCommands(presentation: desktop) }
     }

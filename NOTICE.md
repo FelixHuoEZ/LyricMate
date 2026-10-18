@@ -1,6 +1,6 @@
 # 来源与第三方声明
 
-本项目新增开发与维护工作的作者署名为“我和 codex”；此署名不替代下列上游作者、版权声明或许可证。
+Development and maintenance of LyricMate: FelixHuoEZ and codex. This attribution does not replace the upstream authors, copyright notices or licenses below.
 
 LyricMate 部分代码基于 [aviwad/LyricFever](https://github.com/aviwad/LyricFever)。上游 MIT 许可证和 `Copyright (c) 2024 Avi Wadhwa` 保存在根目录 LICENSE；原有源文件署名继续保留。此项目不是上游官方产品或发行版。
 

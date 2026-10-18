@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 import Observation
 
@@ -72,7 +75,7 @@ enum PreviewSearchPipeline {
                 try validate()
                 partial.reportNotices(provider: custom, name: provider.providerName, note: note)
                 if values.1 {
-                    note("\(provider.providerName) 已做一次仅歌名补充查询；候选按评分临时载入，其他歌手或翻唱的时间轴可能不适合当前录音。")
+                    note(L10n.text("%1$@ made one title-only fallback search. Candidates are previewed by score; other artists or covers may have different timing.", String(describing: provider.providerName)))
                 }
                 append(values.0.filter { LyricFetchPipeline.isValid($0.lyrics) && partial.shouldDeliver($0) })
             } catch {
@@ -99,7 +102,7 @@ final class LyricPreviewSession {
     private(set) var sourceErrors: [String] = []
     private(set) var selectedID: UUID?
     private(set) var isSearching = false
-    private(set) var status = "等待播放信息，也可手动输入歌名和歌手。"
+    private(set) var status = L10n.text("Waiting for playback information. You can also enter a song title and optional artist.")
     private(set) var matchingMessage = ""
     private(set) var memoryMessage = ""
     var trackQuery = ""
@@ -137,15 +140,15 @@ final class LyricPreviewSession {
 
     var selected: SongResult? { results.first { $0.id == selectedID } }
     var unselectedLyricsTitle: String {
-        if isSearching { return "正在查找歌词" }
-        if !results.isEmpty { return "找到歌词，待确认版本" }
-        return sourceErrors.isEmpty ? "暂无时间轴歌词" : "暂未获得可用歌词"
+        if isSearching { return L10n.text("Finding lyrics") }
+        if !results.isEmpty { return L10n.text("Lyrics found; check the recording version") }
+        return sourceErrors.isEmpty ? L10n.text("No timed lyrics") : L10n.text("No usable lyrics retrieved")
     }
     var unselectedLyricsDetail: String {
-        if !results.isEmpty { return "已找到 \(results.count) 个候选，请在左侧核对歌手、专辑和时长后选择；不会自动套用无法确认的翻唱版本。" }
-        if isSearching { return "正在按歌名和歌手查找；没有匹配时会补充仅歌名查询。" }
-        if !sourceErrors.isEmpty { return "部分来源请求失败，请查看左侧错误后重试；请求失败不等于曲库没有歌词。" }
-        return "可在左侧只输入歌名搜索，也可导入此录音的本地 LRC。"
+        if !results.isEmpty { return L10n.text("Found %1$@ candidates. Check the artist, album and duration before selecting; an unverified cover is not treated as the same recording.", String(describing: results.count)) }
+        if isSearching { return L10n.text("Searching by title and artist, with a title-only fallback if needed.") }
+        if !sourceErrors.isEmpty { return L10n.text("Some sources failed. Check the errors and retry; a failed request does not mean the catalog has no lyrics.") }
+        return L10n.text("Search using just the title, or import a local LRC for this recording.")
     }
     var displayedPositionMS: Double {
         followsPlayback ? (playbackAvailable ? playback?.positionMS ?? 0 : 0) : previewPositionMS
@@ -195,7 +198,7 @@ final class LyricPreviewSession {
             previewPositionMS = incoming.positionMS
             trackQuery = incoming.trackName
             artistQuery = incoming.artistName
-            status = "歌曲已切换，旧歌词已清除。"
+            status = L10n.text("Track changed; previous lyrics cleared.")
         }
         if autoSearch && (changed || resumed && results.isEmpty) {
             if !loadRememberedLocal() { search() }
@@ -208,7 +211,7 @@ final class LyricPreviewSession {
         let track = trackQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         let artist = artistQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !track.isEmpty else {
-            status = "请输入歌名；歌手可以留空。"
+            status = L10n.text("Enter a song title. The artist is optional.")
             return nil
         }
         let capturedGeneration = generation
@@ -223,10 +226,10 @@ final class LyricPreviewSession {
         if let snapshot, PreviewRecordingMatcher.normalized(track) == PreviewRecordingMatcher.normalized(snapshot.trackName),
            PreviewRecordingMatcher.artistRelation(artist, snapshot.artistName) == .normalized {
             do { if let local = try localLyrics?.candidate(for: snapshot) { results.append(local) } }
-            catch { sourceErrors.append("本地 LRC：\(error.localizedDescription)") }
+            catch { sourceErrors.append(L10n.text("Local LRC: %1$@", String(describing: error.localizedDescription))) }
         }
         isSearching = true
-        status = "正在搜索…"
+        status = L10n.text("Searching...")
         updateAutomaticSelection(playback: snapshot, track: track, artist: artist, finished: false)
         let task = Task { @MainActor [self] in
             defer { if generation == capturedGeneration { isSearching = false } }
@@ -243,19 +246,19 @@ final class LyricPreviewSession {
                 })
                 guard generation == capturedGeneration else { return }
                 status = results.isEmpty
-                    ? (sourceErrors.isEmpty ? "未找到带时间轴的歌词。" : "未获得可用歌词；来源请求有失败，请查看错误。")
-                    : "请选择录音版本；尚未验证听感同步。"
+                    ? (sourceErrors.isEmpty ? L10n.text("No timed lyrics found.") : L10n.text("No usable lyrics retrieved; some source requests failed. Check the errors."))
+                    : L10n.text("Select the recording version. Audible synchronization has not been verified.")
                 if selectionOrigin == .manual {
-                    status = "保留本轮人工选择；未被后到候选替换。"
+                    status = L10n.text("Keeping your manual selection; later candidates did not replace it.")
                 } else {
                     updateAutomaticSelection(playback: snapshot, track: track, artist: artist, finished: true)
                 }
                 if let snapshot, memoryMessage.isEmpty, preferences?.entries.contains(where: { $0.recording.id == snapshot.trackID }) == true {
-                    memoryMessage = "此录音有记忆，但候选或录音信息未通过重核验；未恢复旧偏移。"
+                    memoryMessage = L10n.text("Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored.")
                 }
             } catch {
                 guard generation == capturedGeneration else { return }
-                status = selectedID != nil ? "歌词已载入；剩余搜索已停止。" : (error is CancellationError ? "搜索已取消。" : "搜索已停止。")
+                status = selectedID != nil ? L10n.text("Lyrics loaded; remaining searches stopped.") : (error is CancellationError ? L10n.text("Search canceled.") : L10n.text("Search stopped."))
             }
         }
         searchTask = task
@@ -275,7 +278,7 @@ final class LyricPreviewSession {
         suppressMemoryWrites = true
         offsetMS = 0
         suppressMemoryWrites = false
-        status = "已选择候选；仍需核对录音与听感同步。"
+        status = L10n.text("Candidate selected; verify the recording and audible synchronization.")
     }
 
     private func updateAutomaticSelection(playback: PlaybackSnapshot?, track: String, artist: String, finished: Bool) {
@@ -290,22 +293,22 @@ final class LyricPreviewSession {
                 applySelection(restored.id, origin: .remembered)
                 suppressMemoryWrites = true; offsetMS = restored.offsetMS; suppressMemoryWrites = false
             }
-            memoryMessage = "已重新核验来源、歌词摘要和录音信息，恢复此歌曲的选择与偏移。"
-            status = finished ? "已恢复用户选择；不代表听感同步已验证。" : "已恢复用户选择；其他来源继续搜索中。"
+            memoryMessage = L10n.text("Revalidated the source, lyric fingerprint and recording; restored the selection and offset.")
+            status = finished ? L10n.text("Saved selection restored; audible synchronization is not verified.") : L10n.text("Saved selection restored; other sources are still searching.")
             return
         }
         if selectionOrigin == .remembered {
             selectedID = nil; selectionOrigin = nil
             suppressMemoryWrites = true; offsetMS = 0; suppressMemoryWrites = false
-            memoryMessage = "记忆候选无法唯一重核验，未保留旧选择与偏移。"
+            memoryMessage = L10n.text("The saved candidate could not be uniquely revalidated; the previous selection and offset were not retained.")
         }
         guard let id = Self.preferredCandidate(in: results, playback: playback, track: track, artist: artist),
               let candidate = results.first(where: { $0.id == id }) else { return }
         let assessment = PreviewRecordingMatcher.assessment(candidate, track: track, artist: artist, playback: playback)
         if selectedID != id { applySelection(id, origin: .automatic) }
-        let confidence = assessment.isReliableMatch ? "录音资料匹配；不代表听感同步已验证。" : "临时匹配，版本可能不同；未自动记忆。"
-        status = "已载入当前最高分 \(assessment.score)/100 的歌词；"
-            + (finished ? "搜索已结束，同分按来源顺序。" : "其他来源继续搜索，更高分会自动替换。") + confidence
+        let confidence = assessment.isReliableMatch ? L10n.text("Recording metadata matches; audible synchronization is not verified.") : L10n.text("Provisional match; the version may differ. Not saved automatically.")
+        status = L10n.text("Loaded the highest-scoring lyrics so far (%1$@/100). ", String(describing: assessment.score))
+            + (finished ? L10n.text("Search finished; source order breaks ties. ") : L10n.text("Other sources are still searching; a higher score will replace this candidate. ")) + confidence
     }
 
     @discardableResult
@@ -316,16 +319,16 @@ final class LyricPreviewSession {
                   let restored = preferences?.restoration(in: [candidate], playback: playback) else { return false }
             presentLocal(candidate)
             suppressMemoryWrites = true; offsetMS = restored.offsetMS; suppressMemoryWrites = false
-            memoryMessage = "已从本机库重核验并恢复本地歌词与偏移，没有网络请求。"
+            memoryMessage = L10n.text("Revalidated and restored local lyrics and offset without a network request.")
             return true
-        } catch { sourceErrors.append("本地 LRC：\(error.localizedDescription)"); return false }
+        } catch { sourceErrors.append(L10n.text("Local LRC: %1$@", String(describing: error.localizedDescription))); return false }
     }
     func presentLocal(_ candidate: SongResult) {
         invalidateSearch()
         results = [candidate]; selectedID = nil; matchingMessage = ""; sourceErrors = []
         trackQuery = candidate.songName; artistQuery = candidate.artistName
         select(candidate.id, remember: false)
-        status = "本地歌词已绑定当前录音；无需网络，录音与听感由用户确认。"
+        status = L10n.text("Local lyrics are bound to this recording. No network is needed; verify the recording and audible synchronization.")
     }
 
     func sourcesChanged() {
@@ -334,20 +337,20 @@ final class LyricPreviewSession {
         selectionOrigin = nil
         memoryMessage = preferences?.loadError ?? ""
         offsetMS = 0
-        status = "来源设置已改变，旧候选已清除；请重新搜索。"
+        status = L10n.text("Source settings changed; previous candidates cleared. Search again.")
     }
 
     func localLibraryChanged(recordingID: String) {
         guard playback?.trackID == recordingID else { return }
         sourcesChanged()
-        status = "本地歌词绑定已改变；旧候选与偏移已清除，请重新选择。"
+        status = L10n.text("Local lyric binding changed; previous candidates and offset cleared. Select again.")
     }
 
     func forgetCurrentChoice() {
         guard let id = playback?.trackID else { return }
         preferences?.forget(id)
         suppressMemoryWrites = true; offsetMS = 0; suppressMemoryWrites = false
-        memoryMessage = "已忘记此歌曲的选择和偏移。"
+        memoryMessage = L10n.text("Forgot this track's selection and offset.")
     }
 
     private func rememberSelection() {
@@ -355,8 +358,8 @@ final class LyricPreviewSession {
               PreviewRecordingMatcher.normalized(trackQuery) == PreviewRecordingMatcher.normalized(playback.trackName),
               PreviewRecordingMatcher.artistRelation(artistQuery, playback.artistName) == .normalized else { return }
         memoryMessage = preferences.remember(selected, playback: playback, offsetMS: offsetMS)
-            ? "已记住此 Spotify 录音的选择与偏移；不保存歌词正文。"
-            : "候选缺少稳定身份、时长或与当前录音不符，仅临时预览，未写入记忆。"
+            ? L10n.text("Saved the selection and offset for this Spotify recording, without lyric text.")
+            : L10n.text("Candidate identity or duration is missing, or the recording differs. Preview only; no choice saved.")
     }
 
     func stop() {

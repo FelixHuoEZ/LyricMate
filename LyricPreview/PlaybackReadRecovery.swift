@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 
 enum PlaybackReadFailure: Error, LocalizedError, Sendable {
@@ -5,15 +8,15 @@ enum PlaybackReadFailure: Error, LocalizedError, Sendable {
 
     var errorDescription: String? {
         switch self {
-        case .missingApplication: return "无法建立现有 Spotify 进程的只读桥；未发出属性查询。"
-        case .bridgeUnavailable: return "读取桥暂时未确认 Spotify 运行；不能据此认定进程已退出。"
-        case .missingProperty(let property): return "Spotify 未返回有效的 \(property) 属性；尚不能判断是否授权失败。"
-        case .eventFailed(-1743): return "系统拒绝此预览读取 Spotify（-1743）；没有更改权限。"
-        case .eventFailed(-1744): return "恢复连接需要系统授权；请点击启用只读跟随 Spotify，本次未弹出权限请求。"
-        case .eventFailed(let code): return "只读 Apple event 失败（\(code)）。"
-        case .trackChanged: return "读取期间歌曲发生变化；已丢弃这次信息。"
-        case .invalidSnapshot: return "Spotify 返回的播放信息无效或处于停止状态。"
-        case .deadlineExceeded: return "只读查询已超过整轮截止时间；未继续读取后续属性。"
+        case .missingApplication: return L10n.text("Could not create a read-only bridge to the existing Spotify process; no property query was sent.")
+        case .bridgeUnavailable: return L10n.text("The read bridge has not confirmed Spotify is running; this does not prove the process exited.")
+        case .missingProperty(let property): return L10n.text("Spotify did not return a valid %1$@ property; permission failure is not yet established.", String(describing: property))
+        case .eventFailed(-1743): return L10n.text("macOS denied this app access to read Spotify (-1743); permissions were not changed.")
+        case .eventFailed(-1744): return L10n.text("Reconnecting needs system permission. Click Enable read-only Spotify following; no permission request was shown this time.")
+        case .eventFailed(let code): return L10n.text("Read-only Apple event failed (%1$@).", String(describing: code))
+        case .trackChanged: return L10n.text("Track changed during the read; this result was discarded.")
+        case .invalidSnapshot: return L10n.text("Spotify returned invalid playback information or is stopped.")
+        case .deadlineExceeded: return L10n.text("The read-only query exceeded its overall deadline; remaining properties were not read.")
         }
     }
 }

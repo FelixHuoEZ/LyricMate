@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 
 struct LyricFetchRequest: Sendable {
@@ -53,17 +56,17 @@ enum LyricSourceError: Error, LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .invalidManifest: return "Invalid lyric source configuration."
-        case .unsupportedVersion: return "Unsupported lyric source version."
-        case .unsupportedAuthentication: return "This version only supports sources without authentication."
-        case .unsafeURL: return "The source must use HTTPS without credentials, query parameters or fragments."
-        case .duplicateSource: return "This source has already been imported."
-        case .sourceLimit: return "At most 16 custom sources are supported."
-        case .invalidResponse: return "The source returned an invalid response."
-        case .responseTooLarge: return "The source response exceeds the size limit."
-        case .httpStatus(let status): return "The source returned HTTP \(status)."
-        case .rateLimited: return "The source is rate limited. Please wait before testing again."
-        case .timeout: return "The lyric request exceeded its time budget."
+        case .invalidManifest: return L10n.text("Invalid lyric source configuration.")
+        case .unsupportedVersion: return L10n.text("Unsupported lyric source version.")
+        case .unsupportedAuthentication: return L10n.text("This version only supports sources without authentication.")
+        case .unsafeURL: return L10n.text("The source must use HTTPS without credentials, query parameters or fragments.")
+        case .duplicateSource: return L10n.text("This source has already been imported.")
+        case .sourceLimit: return L10n.text("At most 16 custom sources are supported.")
+        case .invalidResponse: return L10n.text("The source returned an invalid response.")
+        case .responseTooLarge: return L10n.text("The source response exceeds the size limit.")
+        case .httpStatus(let status): return L10n.text("The source returned HTTP %1$@.", String(status))
+        case .rateLimited: return L10n.text("The source is rate limited. Please wait before testing again.")
+        case .timeout: return L10n.text("The lyric request exceeded its time budget.")
         }
     }
 }

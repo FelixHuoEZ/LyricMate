@@ -1,3 +1,4 @@
+import LyricMateLocalization
 import XCTest
 @testable import LyricFeverCore
 
@@ -34,15 +35,15 @@ final class PreviewLyricPresentationTests: XCTestCase {
         let view = PreviewLyricPresentation(session: session)
         XCTAssertEqual(view.mode, .paused)
         XCTAssertEqual(view.currentLine, "First line")
-        XCTAssertEqual(view.menuTitle(showsLyrics: true), "已暂停 · Song")
-        XCTAssertEqual(view.status, "已暂停")
+        XCTAssertEqual(view.menuTitle(showsLyrics: true), (L10n.text("Paused · ") + "Song"))
+        XCTAssertEqual(view.status, L10n.text("Paused"))
     }
     func testReadFailureNeverShowsStaleLiveLyricsOrMetadata() async {
         let session = await session()
         session.updatePlayback(nil)
         let view = PreviewLyricPresentation(session: session)
         XCTAssertEqual(view.mode, .unavailable)
-        XCTAssertEqual(view.currentLine, "跟随已中断")
+        XCTAssertEqual(view.currentLine, L10n.text("Playback following interrupted"))
         XCTAssertNil(view.nextLine)
         XCTAssertNil(view.positionMS)
         XCTAssertFalse(view.hasActiveLine)
@@ -51,7 +52,7 @@ final class PreviewLyricPresentationTests: XCTestCase {
     }
     func testInitialDisconnectedState() {
         let view = PreviewLyricPresentation(session: LyricPreviewSession(providers: []))
-        XCTAssertEqual(view.currentLine, "等待连接 Spotify")
+        XCTAssertEqual(view.currentLine, L10n.text("Waiting for Spotify"))
         XCTAssertEqual(view.mode, .unavailable)
         XCTAssertEqual(view.menuTitle(showsLyrics: true), "LyricMate")
     }
@@ -60,7 +61,7 @@ final class PreviewLyricPresentationTests: XCTestCase {
         session.updatePlayback(snapshot(), autoSearch: false)
         await session.search()?.value
         let empty = PreviewLyricPresentation(session: session)
-        XCTAssertEqual(empty.currentLine, "暂无时间轴歌词")
+        XCTAssertEqual(empty.currentLine, L10n.text("No timed lyrics"))
         XCTAssertEqual(empty.rows(showsNextLine: true).count, 1)
         XCTAssertFalse(empty.hasVisibleLyrics)
         let failed = FakeProvider("Unavailable") { _ in .init(lyrics: [], colorData: nil) }
@@ -68,8 +69,8 @@ final class PreviewLyricPresentationTests: XCTestCase {
         let failure = LyricPreviewSession(providers: [failed])
         failure.updatePlayback(snapshot(), autoSearch: false)
         await failure.search()?.value
-        XCTAssertEqual(PreviewLyricPresentation(session: failure).currentLine, "暂未获得可用歌词")
-        XCTAssertTrue(failure.unselectedLyricsDetail.contains("请求失败不等于"))
+        XCTAssertEqual(PreviewLyricPresentation(session: failure).currentLine, L10n.text("No usable lyrics retrieved"))
+        XCTAssertTrue(failure.unselectedLyricsDetail.contains(L10n.text("Some sources failed. Check the errors and retry; a failed request does not mean the catalog has no lyrics.")))
         XCTAssertFalse(PreviewLyricPresentation(session: failure).hasActiveLine)
     }
     func testManualCursorCannotMasqueradeAsLivePlayback() async {
@@ -79,8 +80,8 @@ final class PreviewLyricPresentationTests: XCTestCase {
         let view = PreviewLyricPresentation(session: session)
         XCTAssertEqual(view.mode, .manual)
         XCTAssertEqual(view.currentLine, "Next line")
-        XCTAssertEqual(view.menuTitle(showsLyrics: true), "预览 · Song")
-        XCTAssertEqual(view.status, "手动预览")
+        XCTAssertEqual(view.menuTitle(showsLyrics: true), (L10n.text("Preview · ") + "Song"))
+        XCTAssertEqual(view.status, L10n.text("Manual preview"))
         XCTAssertEqual(session.playback?.positionMS, 1500)
     }
     func testBeforeFirstLineAndEndAreBounded() async {
@@ -102,14 +103,14 @@ final class PreviewLyricPresentationTests: XCTestCase {
                                            .init(startTime: 3000, words: "Return")])
         session.updatePlayback(snapshot(position: 2500), autoSearch: false)
         let view = PreviewLyricPresentation(session: session)
-        XCTAssertEqual(view.currentLine, "间奏")
+        XCTAssertEqual(view.currentLine, L10n.text("Instrumental break"))
         XCTAssertEqual(view.nextLine, "Return")
     }
     func testTrackChangeImmediatelyRemovesOldLyrics() async {
         let session = await session()
         session.updatePlayback(snapshot("B"), autoSearch: false)
         let view = PreviewLyricPresentation(session: session)
-        XCTAssertEqual(view.currentLine, "暂无时间轴歌词")
+        XCTAssertEqual(view.currentLine, L10n.text("No timed lyrics"))
         XCTAssertNil(view.nextLine)
         XCTAssertFalse(view.hasActiveLine)
     }

@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 
 /// A read-only projection shared by the menu bar and floating lyrics.
@@ -39,7 +42,7 @@ struct PreviewLyricPresentation: Equatable {
         var currentID: UUID?
         var nextID: UUID?
         if mode == .unavailable {
-            currentLine = session.playback == nil ? "等待连接 Spotify" : "跟随已中断"
+            currentLine = session.playback == nil ? L10n.text("Waiting for Spotify") : L10n.text("Playback following interrupted")
             nextLine = nil
             hasActiveLine = false
         } else if let selected = session.selected {
@@ -64,13 +67,13 @@ struct PreviewLyricPresentation: Equatable {
             } else if let index, selected.lyrics.indices.contains(index) {
                 currentID = selected.lyrics[index].id
                 let text = Self.displayText(selected.lyrics[index].words)
-                currentLine = text.isEmpty ? "间奏" : text
+                currentLine = text.isEmpty ? L10n.text("Instrumental break") : text
                 hasActiveLine = true
                 let next = selected.lyrics.dropFirst(index + 1).first { !Self.displayText($0.words).isEmpty }
                 nextID = next?.id
                 nextLine = next.map { Self.displayText($0.words) }
             } else {
-                currentLine = "等待开唱"
+                currentLine = L10n.text("Waiting to sing")
                 hasActiveLine = false
                 let next = selected.lyrics.first { !Self.displayText($0.words).isEmpty }
                 nextID = next?.id
@@ -129,10 +132,10 @@ struct PreviewLyricPresentation: Equatable {
 
     var status: String {
         switch mode {
-        case .playing: return "播放中"
-        case .paused: return "已暂停"
-        case .manual: return "手动预览"
-        case .unavailable: return "未连接"
+        case .playing: return L10n.text("Playing")
+        case .paused: return L10n.text("Paused")
+        case .manual: return L10n.text("Manual preview")
+        case .unavailable: return L10n.text("Not connected")
         }
     }
 
@@ -140,8 +143,8 @@ struct PreviewLyricPresentation: Equatable {
         let text: String
         switch mode {
         case .unavailable: text = Self.appName
-        case .manual: text = "预览 · " + (title.isEmpty ? Self.appName : title)
-        case .paused: text = "已暂停 · " + title
+        case .manual: text = L10n.text("Preview · ") + (title.isEmpty ? Self.appName : title)
+        case .paused: text = L10n.text("Paused · ") + title
         case .playing: text = showsLyrics && hasVisibleLyrics ? currentLine : title
         }
         let count = max(1, limit)

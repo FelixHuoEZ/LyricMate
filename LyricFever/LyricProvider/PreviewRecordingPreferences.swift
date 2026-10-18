@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 import CryptoKit
 import Observation
@@ -62,7 +65,7 @@ final class PreviewRecordingPreferences {
                 throw LyricSourceError.invalidResponse
             }
             entries = saved.entries
-        } catch { loadError = "录音记忆无法读取；未恢复任何选择或偏移，原记录未删除。" }
+        } catch { loadError = L10n.text("Saved recording choices could not be read. No selection or offset restored; existing records were not deleted.") }
     }
 
     static func fingerprint(_ candidate: SongResult) -> String? {

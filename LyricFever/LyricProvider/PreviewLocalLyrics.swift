@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 import CryptoKit
 
@@ -87,7 +90,7 @@ final class PreviewLocalLyrics {
         return candidate(stored, playback: playback)
     }
     private func candidate(_ value: Import, playback: PlaybackSnapshot) -> SongResult {
-        SongResult(lyricType: "本地 LRC", songName: playback.trackName, albumName: playback.albumName, artistName: playback.artistName,
+        SongResult(lyricType: L10n.text("Local LRC"), songName: playback.trackName, albumName: playback.albumName, artistName: playback.artistName,
                    lyrics: LyricsParser(lyrics: String(decoding: value.lrc, as: UTF8.self)).lyrics, durationMS: playback.durationMS,
                    sourceIdentity: "local-lrc:v1", sourceSongID: value.fileSHA256)
     }

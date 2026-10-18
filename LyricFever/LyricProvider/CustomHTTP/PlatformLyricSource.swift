@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 
 enum PlatformLyricSource: String, CaseIterable, Sendable {
@@ -6,11 +9,11 @@ enum PlatformLyricSource: String, CaseIterable, Sendable {
     var format: LyricSourceFormat { LyricSourceFormat(rawValue: rawValue)! }
     var name: String {
         switch self {
-        case .kugou: return "酷狗"
-        case .netease: return "网易云音乐"
-        case .kuwo: return "酷我音乐"
-        case .qqMusic: return "QQ 音乐"
-        case .migu: return "咪咕音乐"
+        case .kugou: return L10n.text("Kugou")
+        case .netease: return L10n.text("NetEase Cloud Music")
+        case .kuwo: return L10n.text("Kuwo Music")
+        case .qqMusic: return L10n.text("QQ Music")
+        case .migu: return L10n.text("Migu Music")
         }
     }
     var baseURL: String {
@@ -42,8 +45,8 @@ enum PlatformLyricError: Error, LocalizedError, Equatable {
     case untimedLyrics
     var errorDescription: String? {
         switch self {
-        case .businessStatus(let code): return "平台返回业务错误 \(code)，不能据此判断此歌无歌词。"
-        case .untimedLyrics: return "某个候选仅提供无时间轴歌词，已跳过；不影响其他候选或来源。"
+        case .businessStatus(let code): return L10n.text("The platform returned error %1$@. This does not mean lyrics are unavailable.", String(describing: code))
+        case .untimedLyrics: return L10n.text("Skipped a candidate without timing data; other candidates and sources are unaffected.")
         }
     }
 }

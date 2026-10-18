@@ -1,3 +1,4 @@
+import LyricMateLocalization
 import XCTest
 @testable import LyricFeverCore
 
@@ -42,7 +43,7 @@ final class PreviewProgressiveSelectionTests: XCTestCase {
         XCTAssertEqual(model.activeIndex, 0)
         later.finish(); await task?.value
         XCTAssertFalse(model.isSearching)
-        XCTAssertFalse(model.status.contains("人工"))
+        XCTAssertFalse(model.status.contains(L10n.text("Keeping your manual selection; later candidates did not replace it.")))
     }
 
     func testHTTPResultLoadsBeforeOtherCandidatesFromSameSourceFinish() async throws {
@@ -99,7 +100,7 @@ final class PreviewProgressiveSelectionTests: XCTestCase {
             await fulfillment(of: [later.started], timeout: 2)
             XCTAssertEqual(model.selectedID, value.id)
             XCTAssertEqual(PreviewLyricPresentation(session: model).currentLine, "Synthetic")
-            if !model.matchAssessment(for: value).isReliableMatch { XCTAssertTrue(model.status.contains("临时匹配")) }
+            if !model.matchAssessment(for: value).isReliableMatch { XCTAssertTrue(model.status.contains(L10n.text("Provisional match; the version may differ. Not saved automatically."))) }
             later.finish(); await task?.value
             XCTAssertEqual(model.selectedID, value.id)
         }
@@ -180,7 +181,7 @@ final class PreviewProgressiveSelectionTests: XCTestCase {
             later.finish([perfect]); await task?.value
             XCTAssertEqual(model.selectedID, changeOffset ? provisional.id : other.id)
             XCTAssertEqual(model.offsetMS, changeOffset ? 250 : 0)
-            XCTAssertTrue(model.status.contains("人工"))
+            XCTAssertTrue(model.status.contains(L10n.text("Keeping your manual selection; later candidates did not replace it.")))
         }
     }
 

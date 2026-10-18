@@ -1,3 +1,4 @@
+import LyricMateLocalization
 import XCTest
 @testable import LyricPreviewPolicy
 
@@ -54,8 +55,8 @@ final class PlaybackControlPolicyTests: XCTestCase {
         XCTAssertNil(gate.begin(.nextTrack, process: spotify, trackID: ""))
     }
     func testFailuresDoNotClaimPlaybackSuccess() {
-        XCTAssertTrue(PlaybackControlFailure.event(-1712).message.contains("未确认"))
-        XCTAssertTrue(PlaybackControlFailure.expired.message.contains("不自动重试"))
-        XCTAssertTrue(PlaybackControlFailure.event(-1743).message.contains("权限"))
+        XCTAssertTrue(PlaybackControlFailure.event(-1712).message.contains(L10n.text("Control result unconfirmed (%1$@); no automatic retry.", "-1712")))
+        XCTAssertTrue(PlaybackControlFailure.expired.message.contains(L10n.text("Action timed out. Result unconfirmed; no automatic retry.")))
+        XCTAssertTrue(PlaybackControlFailure.event(-1743).message.contains(L10n.text("macOS has not allowed Spotify control. Check Automation permissions.")))
     }
 }

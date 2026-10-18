@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import AppKit
 import SwiftUI
 
@@ -19,7 +22,7 @@ final class PreviewFloatingPanel: NSPanel, NSWindowDelegate {
         super.init(contentRect: NSRect(x: 0, y: 0, width: 720, height: 100),
                    styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
-        title = "LyricMate · 悬浮歌词"
+        title = L10n.text("LyricMate · Floating lyrics")
         identifier = NSUserInterfaceItemIdentifier("preview-floating-lyrics")
         titleVisibility = .hidden
         titlebarAppearsTransparent = true

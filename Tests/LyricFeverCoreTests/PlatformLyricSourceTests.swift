@@ -1,3 +1,4 @@
+import LyricMateLocalization
 import XCTest
 @testable import LyricFeverCore
 
@@ -326,8 +327,8 @@ final class PlatformLyricSourceTests: XCTestCase {
             note: { notes.append($0) }, failure: { _, _ in failures += 1 }, append: { results += $0 })
         XCTAssertEqual(failures, 0)
         XCTAssertTrue(results.isEmpty)
-        XCTAssertTrue(notes.contains { $0.contains("无时间轴") })
-        XCTAssertEqual(notes.filter { $0.contains("无时间轴") }.count, 1)
+        XCTAssertTrue(notes.contains { $0.contains(L10n.text("Skipped a candidate without timing data; other candidates and sources are unaffected.")) })
+        XCTAssertEqual(notes.filter { $0.contains(L10n.text("Skipped a candidate without timing data; other candidates and sources are unaffected.")) }.count, 1)
         XCTAssertEqual(provider.requestCount, 4)
     }
 

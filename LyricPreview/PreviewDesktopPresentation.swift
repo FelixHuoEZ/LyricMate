@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import AppKit
 import SwiftUI
 import Observation
@@ -72,7 +75,7 @@ final class PreviewDesktopPresentation: NSObject {
             let view = lyrics
             button.title = " " + view.menuTitle(showsLyrics: settings.showsMenuLyrics)
             button.image = NSImage(systemSymbolName: view.mode == .paused ? "pause.circle" : "music.note.list", accessibilityDescription: PreviewLyricPresentation.appName)
-            button.toolTip = PreviewLyricPresentation.appName + " · " + view.status + " · 点击打开歌词面板"
+            button.toolTip = PreviewLyricPresentation.appName + " · " + view.status + L10n.text(" · Click to open the lyrics panel")
             button.setAccessibilityLabel("\(PreviewLyricPresentation.appName)，\(view.status)，\(view.menuTitle(showsLyrics: settings.showsMenuLyrics))")
         } onChange: { [weak self] in
             Task { @MainActor in self?.observeMenuTitle() }
@@ -143,7 +146,7 @@ final class PreviewMenuPanel: NSWindow, NSWindowDelegate {
     init(content: some View) {
         super.init(contentRect: NSRect(x: 0, y: 0, width: 370, height: 690),
                    styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
-        title = "LyricMate · 歌词面板"
+        title = L10n.text("LyricMate · Lyrics panel")
         identifier = NSUserInterfaceItemIdentifier("preview-menu-lyrics")
         titleVisibility = .hidden
         titlebarAppearsTransparent = true
@@ -191,7 +194,7 @@ struct PreviewMenuBarContent: View {
                 Text(lyrics.status).font(.caption).foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text(verbatim: lyrics.title.isEmpty ? "独立歌词工作台" : lyrics.title).font(.title3.bold()).lineLimit(2)
+                Text(verbatim: lyrics.title.isEmpty ? L10n.text("Standalone lyrics workspace") : lyrics.title).font(.title3.bold()).lineLimit(2)
                 Text(verbatim: lyrics.artist).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             PreviewPlaybackControls(controller: presentation.controller)
@@ -199,41 +202,41 @@ struct PreviewMenuBarContent: View {
                 .id(lyrics.lyricIdentity).padding(16)
                 .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 12))
             if !presentation.controller.enabled {
-                Button("启用只读跟随 Spotify") { presentation.controller.requestPermission() }
+                Button(L10n.text("Enable read-only Spotify following")) { presentation.controller.requestPermission() }
                     .disabled(presentation.controller.connecting || !presentation.controller.allowsPlaybackRead)
             }
             HStack {
-                Button(presentation.floatingVisible ? "隐藏悬浮歌词" : "显示悬浮歌词", systemImage: "rectangle.on.rectangle") { presentation.toggleFloating() }
+                Button(presentation.floatingVisible ? L10n.text("Hide floating lyrics") : L10n.text("Show floating lyrics"), systemImage: "rectangle.on.rectangle") { presentation.toggleFloating() }
                 Spacer()
-                Button("打开工作台", systemImage: "macwindow") {
+                Button(L10n.text("Open workspace"), systemImage: "macwindow") {
                     presentation.showWorkbench()
                 }
             }
             Divider()
-            Toggle("菜单栏显示当前歌词", isOn: $settings.showsMenuLyrics)
-            Toggle("显示下一句", isOn: $settings.showsNextLine)
-            Toggle("锁定悬浮窗（鼠标穿透）", isOn: $settings.locked)
+            Toggle(L10n.text("Show current lyrics in the menu bar"), isOn: $settings.showsMenuLyrics)
+            Toggle(L10n.text("Show next line"), isOn: $settings.showsNextLine)
+            Toggle(L10n.text("Lock floating window (click-through)"), isOn: $settings.locked)
                 .onChange(of: settings.locked) { presentation.applyLock() }
-            Text(settings.locked ? "悬浮播放按钮已隐藏：先取消锁定，再将鼠标移入歌词区域。" : "将鼠标移入悬浮歌词区域，下方显示上一首、播放/暂停、下一首。")
+            Text(settings.locked ? L10n.text("Floating controls are hidden while locked. Unlock, then hover over the lyrics.") : L10n.text("Hover over the floating lyrics to reveal Previous, Play/Pause and Next below them."))
                 .font(.caption2).foregroundStyle(.secondary)
-            Toggle("下次启动恢复 Spotify 连接", isOn: $settings.resumesSpotify)
-                .help("只恢复已运行的 Spotify；不会自动启动播放器或弹出新的权限请求")
+            Toggle(L10n.text("Restore Spotify connection at next launch"), isOn: $settings.resumesSpotify)
+                .help(L10n.text("Only reconnects to an already-running Spotify; never launches the player or requests new permission automatically"))
             HStack {
-                Text("字号").frame(width: 46, alignment: .leading)
-                Slider(value: $settings.fontSize, in: 20...48, step: 1).accessibilityLabel("悬浮歌词字号")
+                Text(L10n.text("Font size")).frame(width: 64, alignment: .leading)
+                Slider(value: $settings.fontSize, in: 20...48, step: 1).accessibilityLabel(L10n.text("Floating lyric font size"))
                 Text("\(Int(settings.fontSize))").monospacedDigit().frame(width: 28)
             }
             HStack {
-                Text("阴影").frame(width: 46, alignment: .leading)
-                Slider(value: $settings.shadowOpacity, in: 0.35...0.95, step: 0.05).accessibilityLabel("悬浮歌词文字阴影强度")
+                Text(L10n.text("Shadow")).frame(width: 64, alignment: .leading)
+                Slider(value: $settings.shadowOpacity, in: 0.35...0.95, step: 0.05).accessibilityLabel(L10n.text("Floating lyric text shadow strength"))
                 Text("\(Int((settings.shadowOpacity * 100).rounded()))%").monospacedDigit().frame(width: 36)
             }
             HStack {
-                Button("重置悬浮位置") { presentation.resetPosition() }.disabled(!presentation.floatingVisible)
+                Button(L10n.text("Reset floating position")) { presentation.resetPosition() }.disabled(!presentation.floatingVisible)
                 Spacer()
-                Button("退出") { NSApp.terminate(nil) }
+                Button(L10n.text("Quit")) { NSApp.terminate(nil) }
             }.font(.caption)
-            Text("歌词只读跟随 · 播放控制仅响应按钮点击").font(.caption2).foregroundStyle(.secondary)
+            Text(L10n.text("Read-only lyric following · Playback controls respond only to clicks")).font(.caption2).foregroundStyle(.secondary)
         }
         .padding(20).frame(width: 370)
         }
@@ -262,7 +265,7 @@ struct PreviewPlaybackControls: View {
                     Text(time(Double(snapshot.durationMS)))
                 }.font(.caption2).monospacedDigit().foregroundStyle(.secondary)
             }
-            Text(controller.controlMessage.isEmpty ? "仅控制已连接的 Spotify，不自动启动播放器" : controller.controlMessage)
+            Text(controller.controlMessage.isEmpty ? L10n.text("Controls only the connected Spotify; never launches the player") : controller.controlMessage)
                 .font(.caption2).foregroundStyle(.secondary).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -287,8 +290,8 @@ struct PreviewDesktopCommands: Commands {
     let presentation: PreviewDesktopPresentation
     var body: some Commands {
         CommandGroup(after: .windowArrangement) {
-            Button("打开歌词面板") { presentation.toggleMenu() }.keyboardShortcut("l", modifiers: [.command, .shift])
-            Button("显示或隐藏悬浮歌词") { presentation.toggleFloating() }.keyboardShortcut("f", modifiers: [.command, .option])
+            Button(L10n.text("Open lyrics panel")) { presentation.toggleMenu() }.keyboardShortcut("l", modifiers: [.command, .shift])
+            Button(L10n.text("Toggle floating lyrics")) { presentation.toggleFloating() }.keyboardShortcut("f", modifiers: [.command, .option])
         }
     }
 }
@@ -466,10 +469,10 @@ struct PreviewRollingLyrics: View {
                         .accessibilityLabel(rowLabel(row))
                     Group {
                         if (row.isCurrent || displayed.isWaitingToSing) && plan.needsDisclosure {
-                            Button("全文") { openFullLyrics?() }
+                            Button(L10n.text("Full text")) { openFullLyrics?() }
                                 .font(.system(size: 11)).buttonStyle(.plain)
-                                .help("这句过长，打开工作台查看完整歌词")
-                                .accessibilityLabel("长句未完整显示，打开工作台查看全文")
+                                .help(L10n.text("This line is too long; open the workspace to read it in full"))
+                                .accessibilityLabel(L10n.text("Long line is not fully visible; open the workspace for full text"))
                         } else { Color.clear.accessibilityHidden(true) }
                     }.frame(width: 28)
                 }
@@ -495,8 +498,8 @@ struct PreviewRollingLyrics: View {
     }
 
     private func rowLabel(_ row: PreviewLyricPresentation.Row) -> String {
-        if displayed.isWaitingToSing { return "待开唱：\(row.text)" }
-        return row.isCurrent ? "\(displayed.status)，当前歌词：\(row.text)" : "下一句：\(row.text)"
+        if displayed.isWaitingToSing { return L10n.text("Waiting to sing: %1$@", String(describing: row.text)) }
+        return row.isCurrent ? L10n.text("%1$@, current lyric: %2$@", String(describing: displayed.status), String(describing: row.text)) : L10n.text("Next line: %1$@", String(describing: row.text))
     }
 }
 
@@ -513,7 +516,7 @@ struct PreviewCountdownDots: View {
         .foregroundStyle(Color(red: 0.98, green: 0.83, blue: 0.62))
         .animation(reduceMotion ? nil : .linear(duration: 0.15), value: opacities)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(opacities.isEmpty ? "" : "即将开唱，剩余 \(opacities.filter { $0 > 0 }.count) 秒")
+        .accessibilityLabel(opacities.isEmpty ? "" : L10n.text("About to sing, %1$@ seconds remaining", String(describing: opacities.filter { $0 > 0 }.count)))
         .accessibilityHidden(opacities.isEmpty)
     }
 }

@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 
 enum PlaybackControlCommand: String, Codable, CaseIterable, Sendable {
@@ -5,11 +8,11 @@ enum PlaybackControlCommand: String, Codable, CaseIterable, Sendable {
 
     var title: String {
         switch self {
-        case .previousTrack: return "上一首"
-        case .backward10: return "后退 10 秒"
-        case .togglePlayback: return "播放/暂停"
-        case .forward10: return "前进 10 秒"
-        case .nextTrack: return "下一首"
+        case .previousTrack: return L10n.text("Previous track")
+        case .backward10: return L10n.text("Back 10 seconds")
+        case .togglePlayback: return L10n.text("Play/Pause")
+        case .forward10: return L10n.text("Forward 10 seconds")
+        case .nextTrack: return L10n.text("Next track")
         }
     }
 
@@ -42,14 +45,14 @@ enum PlaybackControlFailure: Error, Sendable, Equatable {
 
     var message: String {
         switch self {
-        case .unavailable: return "Spotify 进程已变化或不可用；未启动播放器。"
-        case .trackChanged: return "歌曲已切换；本次操作已取消，请确认后再点击。"
-        case .invalidPosition: return "播放位置或时长无效；没有调整进度。"
-        case .unsupported: return "当前 Spotify 未提供此控制接口。"
-        case .expired: return "操作已超时；结果未确认，不自动重试。"
-        case .event(-1743): return "系统未允许控制 Spotify；请检查自动化权限。"
-        case .event(let code): return "控制结果未确认（\(code)）；不自动重试。"
-        case .unexpected: return "控制结果未确认；不自动重试。"
+        case .unavailable: return L10n.text("Spotify process changed or is unavailable; the player was not launched.")
+        case .trackChanged: return L10n.text("Track changed. This action was canceled; check the track before clicking again.")
+        case .invalidPosition: return L10n.text("Playback position or duration is invalid; no seek was performed.")
+        case .unsupported: return L10n.text("Spotify does not currently provide this control interface.")
+        case .expired: return L10n.text("Action timed out. Result unconfirmed; no automatic retry.")
+        case .event(-1743): return L10n.text("macOS has not allowed Spotify control. Check Automation permissions.")
+        case .event(let code): return L10n.text("Control result unconfirmed (%1$@); no automatic retry.", String(describing: code))
+        case .unexpected: return L10n.text("Control result unconfirmed; no automatic retry.")
         }
     }
 }

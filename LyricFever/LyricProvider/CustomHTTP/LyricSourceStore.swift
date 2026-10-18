@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 import Observation
 
@@ -82,7 +85,7 @@ final class LyricSourceStore {
             }
             sources = stored.sources
         } catch {
-            loadError = "Saved lyric sources could not be loaded. Import a valid configuration to replace them."
+            loadError = L10n.text("Saved lyric sources could not be loaded. Import a valid configuration to replace them.")
         }
     }
 

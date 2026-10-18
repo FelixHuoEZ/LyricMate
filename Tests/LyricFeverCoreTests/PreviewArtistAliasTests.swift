@@ -1,3 +1,4 @@
+import LyricMateLocalization
 import XCTest
 @testable import LyricFeverCore
 
@@ -97,7 +98,7 @@ final class PreviewArtistAliasTests: XCTestCase {
         await session.search()?.value
         XCTAssertEqual(session.selectedID, value.id)
         XCTAssertEqual(PreviewLyricPresentation(session: session).currentLine, "Synthetic first")
-        XCTAssertTrue(session.status.contains("临时匹配"))
+        XCTAssertTrue(session.status.contains(L10n.text("Provisional match; the version may differ. Not saved automatically.")))
     }
 
 }

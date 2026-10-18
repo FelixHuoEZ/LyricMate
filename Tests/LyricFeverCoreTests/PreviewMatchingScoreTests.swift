@@ -1,3 +1,4 @@
+import LyricMateLocalization
 import XCTest
 @testable import LyricFeverCore
 
@@ -82,7 +83,7 @@ final class PreviewMatchingScoreTests: XCTestCase {
         XCTAssertEqual(session.selectedID, session.results[0].id)
         XCTAssertEqual(session.matchAssessment(for: session.results[0]).score, 70)
         XCTAssertFalse(session.matchAssessment(for: session.results[0]).isReliableMatch)
-        XCTAssertTrue(session.status.contains("临时匹配"))
+        XCTAssertTrue(session.status.contains(L10n.text("Provisional match; the version may differ. Not saved automatically.")))
     }
     func testFallbackDisplaysCoverProvisionallyWithoutInventingRecordingEvidence() async throws {
         let body = Data(#"[{"id":1,"trackName":"Song","artistName":"Cover","albumName":"Album","duration":30,"instrumental":false,"syncedLyrics":"[00:05]Synthetic first\n[00:07]Synthetic next"}]"#.utf8)
@@ -98,9 +99,9 @@ final class PreviewMatchingScoreTests: XCTestCase {
         XCTAssertEqual(provider.requestCount, 2)
         XCTAssertEqual(session.results.first?.artistName, "Cover")
         XCTAssertEqual(session.selectedID, session.results[0].id)
-        XCTAssertTrue(session.matchingMessage.contains("仅歌名"))
+        XCTAssertTrue(session.matchingMessage.contains(L10n.text("%1$@ made one title-only fallback search. Candidates are previewed by score; other artists or covers may have different timing.", "")))
         XCTAssertFalse(session.matchAssessment(for: session.results[0]).isReliableMatch)
-        XCTAssertTrue(session.status.contains("临时匹配"))
+        XCTAssertTrue(session.status.contains(L10n.text("Provisional match; the version may differ. Not saved automatically.")))
         let presentation = PreviewLyricPresentation(session: session)
         XCTAssertEqual(presentation.currentLine, "Synthetic first")
         XCTAssertEqual(presentation.nextLine, "Synthetic next")
@@ -123,7 +124,7 @@ final class PreviewMatchingScoreTests: XCTestCase {
         XCTAssertEqual(session.results.count, 1)
         XCTAssertEqual(session.sourceErrors.count, 1)
         XCTAssertEqual(session.selectedID, session.results[0].id)
-        XCTAssertTrue(session.status.contains("临时匹配"))
+        XCTAssertTrue(session.status.contains(L10n.text("Provisional match; the version may differ. Not saved automatically.")))
     }
 
     func testPrimaryCandidateIsVisibleDuringTitleOnlyFallbackAndDuplicateIsNotAddedTwice() async throws {

@@ -11,6 +11,7 @@ trap 'rm -rf "$cache"' EXIT
 mkdir -p "$output/Contents/MacOS" "$output/Contents/Resources"
 cd "$root"
 sources=(
+    Localization/L10n.swift
     LyricFever/Models/LyricLine.swift
     LyricFever/Models/LyricTimeline.swift
     LyricFever/Models/NetworkFetchReturn.swift
@@ -65,6 +66,7 @@ swiftc -parse-as-library -swift-version 5 -strict-concurrency=complete -warnings
 cp LyricPreview/Info.plist "$output/Contents/Info.plist"
 cp LICENSE NOTICE.md "$output/Contents/Resources/"
 cp -R LICENSES "$output/Contents/Resources/"
+cp -R Localization/Resources/en.lproj Localization/Resources/zh-Hans.lproj "$output/Contents/Resources/"
 codesign --force --sign - --identifier local.lyricmate.alpha "$output"
 codesign --verify --strict "$output"
 printf '%s\n' "$output"

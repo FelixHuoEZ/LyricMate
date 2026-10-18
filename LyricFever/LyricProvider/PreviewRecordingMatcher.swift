@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import Foundation
 
 enum PreviewRecordingMatcher {
@@ -77,8 +80,8 @@ enum PreviewRecordingMatcher {
         var score = titleMatches ? 40 : 0
         let knownArtist = relation == .normalized || relation == .verifiedAlias
         score += knownArtist ? 30 : relation == .searchLabel ? 10 : 0
-        var notes = [titleMatches ? "歌名/版本 +40" : "歌名或版本不同 +0",
-                     relation == .normalized ? "完整歌手 +30" : relation == .verifiedAlias ? "已核实歌手别名 +30" : relation == .searchLabel ? "歌手搜索标签 +10（需确认）" : "歌手不同 +0"]
+        var notes = [titleMatches ? L10n.text("Title/version +40") : L10n.text("Different title or version +0"),
+                     relation == .normalized ? L10n.text("Full artist match +30") : relation == .verifiedAlias ? L10n.text("Verified artist alias +30") : relation == .searchLabel ? L10n.text("Artist search label +10 (confirmation needed)") : L10n.text("Different artist +0")]
         var durationMatches = false
         var tightDurationMatches = false
         if currentQuery, let playback, let duration = candidate.durationMS, duration >= 0, duration <= 86_400_000 {
@@ -87,23 +90,23 @@ enum PreviewRecordingMatcher {
             tightDurationMatches = delta <= 1000
             let points = delta <= 500 ? 20 : delta <= 1000 ? 18 : delta <= 2000 ? 15 : 0
             score += points
-            notes.append("时长差 \(Int(delta)) ms +\(points)")
-        } else { notes.append("时长未知或无当前录音参照 +0") }
+            notes.append(L10n.text("Duration difference %1$@ ms +%2$@", String(describing: Int(delta)), String(describing: points)))
+        } else { notes.append(L10n.text("Unknown duration or no current recording reference +0")) }
         let albumMatches = currentQuery && playback.map {
             !normalized($0.albumName).isEmpty && normalized(candidate.albumName) == normalized($0.albumName)
         } == true
         if albumMatches {
-            score += 10; notes.append("专辑 +10")
-        } else { notes.append("专辑不同或未知 +0") }
+            score += 10; notes.append(L10n.text("Album +10"))
+        } else { notes.append(L10n.text("Different or unknown album +0")) }
         let valid = LyricFetchPipeline.isValid(candidate.lyrics, durationMS: currentQuery ? playback?.durationMS ?? 0 : 0)
         let validDuration = candidate.durationMS.map { (0...86_400_000).contains($0) } ?? true
         let artistEvidence = relation == .normalized || relation == .verifiedAlias && albumMatches && tightDurationMatches
         let reliable = currentQuery && titleMatches && artistEvidence && durationMatches
             && valid && validDuration && !candidate.requiresManualSelection && score >= 85
-        if relation == .verifiedAlias && !artistEvidence { notes.append("别名可靠匹配还需同专辑且时长差不超过 1 秒") }
-        if candidate.requiresManualSelection { notes.append("来源录音资料尚未确认，仅临时显示") }
-        if !valid { notes.append("时间轴校验未通过") }
-        if !validDuration { notes.append("候选时长无效") }
+        if relation == .verifiedAlias && !artistEvidence { notes.append(L10n.text("A reliable alias match also needs the same album and a duration difference of at most 1 second")) }
+        if candidate.requiresManualSelection { notes.append(L10n.text("Source recording metadata is unverified; provisional display only")) }
+        if !valid { notes.append(L10n.text("Lyric timeline validation failed")) }
+        if !validDuration { notes.append(L10n.text("Invalid candidate duration")) }
         return .init(score: score, isReliableMatch: reliable, canPreview: valid && validDuration,
                      explanation: notes.joined(separator: " · "))
     }

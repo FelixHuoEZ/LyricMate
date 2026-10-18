@@ -10,5 +10,7 @@
     <key>CFBundleVersion</key><string>23</string>
     <key>LSMinimumSystemVersion</key><string>15.0</string>
     <key>NSPrincipalClass</key><string>NSApplication</string>
-    <key>NSAppleEventsUsageDescription</key><string>读取 Spotify 的歌曲信息、播放状态与进度以同步歌词；仅在你点击菜单栏或悬浮歌词按钮时执行播放/暂停、上一首、下一首或前后跳转10秒，不自动启动播放器。</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleLocalizations</key><array><string>en</string><string>zh-Hans</string></array>
+    <key>NSAppleEventsUsageDescription</key><string>Read Spotify track information, playback state and position to synchronize lyrics. Playback, pause, previous/next and 10-second seeks happen only when you click a control. Spotify is never launched automatically.</string>
 </dict></plist>

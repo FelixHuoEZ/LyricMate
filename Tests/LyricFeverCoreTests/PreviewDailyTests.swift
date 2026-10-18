@@ -1,3 +1,4 @@
+import LyricMateLocalization
 import XCTest
 @testable import LyricFeverCore
 
@@ -145,7 +146,7 @@ final class PreviewDailyTests: XCTestCase {
         let session = model([candidate(text: "Updated lyric")], preferences: preferences)
         session.updatePlayback(playback(), autoSearch: false); await session.search()?.value
         XCTAssertEqual(session.offsetMS, 0)
-        XCTAssertTrue(session.memoryMessage.contains("未恢复旧偏移"))
+        XCTAssertTrue(session.memoryMessage.contains(L10n.text("Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored.")))
         XCTAssertEqual(defaults.data(forKey: PreviewRecordingPreferences.storageKey), data)
     }
     func testUnavailablePlaybackAndManualOtherQueryCannotWriteMemory() async {
@@ -184,11 +185,11 @@ final class PreviewDailyTests: XCTestCase {
         session.select(original.id); session.offsetMS = 500
         await session.search()?.value
         XCTAssertEqual(session.offsetMS, 500)
-        XCTAssertTrue(session.memoryMessage.contains("恢复"))
+        XCTAssertTrue(session.memoryMessage.contains(L10n.text("Revalidated the source, lyric fingerprint and recording; restored the selection and offset.")))
         available = [candidate(text: "Changed body")]
         await session.search()?.value
         XCTAssertEqual(session.offsetMS, 0)
-        XCTAssertTrue(session.memoryMessage.contains("未恢复旧偏移"))
+        XCTAssertTrue(session.memoryMessage.contains(L10n.text("Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored.")))
         session.sourcesChanged()
         XCTAssertTrue(session.memoryMessage.isEmpty)
     }
@@ -233,8 +234,8 @@ final class PreviewDailyTests: XCTestCase {
         XCTAssertEqual(provider.requestCount, 2); XCTAssertEqual(session.results.count, 2)
         XCTAssertTrue(session.results.contains { $0.sourceSongID == "2" })
         XCTAssertEqual(session.selected?.sourceSongID, "2")
-        XCTAssertTrue(session.status.contains("临时匹配"))
-        XCTAssertTrue(session.matchingMessage.contains("一次仅歌名"))
+        XCTAssertTrue(session.status.contains(L10n.text("Provisional match; the version may differ. Not saved automatically.")))
+        XCTAssertTrue(session.matchingMessage.contains(L10n.text("%1$@ made one title-only fallback search. Candidates are previewed by score; other artists or covers may have different timing.", "")))
     }
     func testOnlyOneSupplementPerSourceAnd503IsNotBroadened() async throws {
         let (urlSession, host) = StubURLProtocol.session { _ in .init(data: Data("[]".utf8)) }
@@ -248,7 +249,7 @@ final class PreviewDailyTests: XCTestCase {
         let bad = try CustomHTTPSourceProvider(manifest: manifest(baseURL: "https://\(badHost)/", format: .lrclib), client: LyricHTTPClient(session: failing))
         let failed = LyricPreviewSession(providers: [bad]); failed.updatePlayback(playback(), autoSearch: false)
         await failed.search()?.value; XCTAssertEqual(bad.requestCount, 1); XCTAssertEqual(failed.sourceErrors.count, 1)
-        XCTAssertFalse(failed.status.contains("未找到带时间轴"))
+        XCTAssertFalse(failed.status.contains(L10n.text("No timed lyrics found.")))
     }
     func testRateLimitStopsLaterSourcesAndDynamicProviderSnapshotIsFresh() async throws {
         let (urlSession, host) = StubURLProtocol.session { _ in .init(status: 429) }

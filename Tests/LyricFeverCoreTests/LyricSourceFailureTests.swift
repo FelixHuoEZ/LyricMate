@@ -1,3 +1,4 @@
+import LyricMateLocalization
 import XCTest
 @testable import LyricFeverCore
 
@@ -63,7 +64,7 @@ final class LyricSourceFailureTests: XCTestCase {
         XCTAssertFalse(model.isSearching)
         XCTAssertTrue(model.results.isEmpty)
         XCTAssertEqual(model.sourceErrors.count, 1)
-        XCTAssertTrue(model.status.contains("失败"))
+        XCTAssertTrue(model.status.contains(L10n.text("No usable lyrics retrieved; some source requests failed. Check the errors.")))
     }
 
     func testExplicitSearchAfterOfflineRecoversAndClearsOldErrors() async {
@@ -131,7 +132,7 @@ final class LyricSourceFailureTests: XCTestCase {
         model.artistQuery = "Artist"
         await model.search()?.value
         XCTAssertTrue(model.sourceErrors.isEmpty)
-        XCTAssertEqual(model.status, "未找到带时间轴的歌词。")
+        XCTAssertEqual(model.status, L10n.text("No timed lyrics found."))
     }
 
     func testAllMalformedCandidateFetchesRemainAResponseError() async throws {

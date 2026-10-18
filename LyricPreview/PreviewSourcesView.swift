@@ -1,3 +1,6 @@
+#if canImport(LyricMateLocalization)
+import LyricMateLocalization
+#endif
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -27,49 +30,49 @@ struct PreviewSourcesView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("独立版歌词源").font(.title2.bold())
+                Text(L10n.text("Lyric sources")).font(.title2.bold())
                 Spacer()
-                Button("关闭源管理") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(L10n.text("Close source manager")) { dismiss() }.keyboardShortcut(.cancelAction)
             }.padding()
             Form {
-                Section("导入兼容服务") {
-                    Text("酷狗、网易云、酷我、QQ 音乐、咪咕使用固定公开歌词接口，可在下方开关。只接受无登录凭据的 HTTPS JSON 配置；不运行六音/LX JavaScript。内置 LRCLIB 始终保留。")
+                Section(L10n.text("Import compatible services")) {
+                    Text(L10n.text("Kugou, NetEase, Kuwo, QQ Music and Migu use fixed public lyric endpoints and can be enabled below. Only credential-free HTTPS JSON configurations are accepted; Liuyin/LX JavaScript is not executed. Built-in LRCLIB remains available."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Button("导入 JSON 文件") { importing = true }
+                    Button(L10n.text("Import JSON file")) { importing = true }
                     ForEach(PlatformLyricSource.allCases, id: \.rawValue) { platform in
-                        Button("添加\(platform.name)歌词源") {
+                        Button(L10n.text("Add %1$@ lyric source", String(describing: platform.name))) {
                             if let data = try? JSONEncoder().encode(platform.manifest) { prepare(data) }
                         }.disabled(registry.store.sources.contains { $0.manifest.apiFormat == platform.format })
                     }
-                    Text("只取歌词，不提供音频播放或下载。公开接口非官方开放 API，可能变动或限流；平台标记仅表示接入，不保证每首歌有词。有效时间轴歌词按评分先载入、再升级；咪咕时长未知，仅临时匹配，不自动记忆。")
+                    Text(L10n.text("Lyrics only, with no audio playback or downloads. These are not official open APIs and may change or rate-limit requests. Integration does not guarantee coverage. Valid timed lyrics load by score and upgrade as results arrive; Migu has unknown durations and is preview-only, without automatic saving."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Button("添加 AMLL 社区备用源") {
-                        let manifest = LyricSourceManifest(schemaVersion: 1, apiVersion: 1, name: "AMLL 社区库", baseURL: AMLLSource.baseURL,
+                    Button(L10n.text("Add AMLL community fallback")) {
+                        let manifest = LyricSourceManifest(schemaVersion: 1, apiVersion: 1, name: L10n.text("AMLL community library"), baseURL: AMLLSource.baseURL,
                                                            capabilities: ["search", "syncedLyrics"], auth: .init(type: "none"), format: .amllTTML)
                         if let data = try? JSONEncoder().encode(manifest) { prepare(data) }
                     }
-                    Text("AMLL 官方 GitHub 公开索引与 TTML 文件，无需登录。社区候选须手动确认，时长未知；仅展示逐行。仓库 CC0 不替代原歌词授权，本版不捆绑歌词发行。")
+                    Text(L10n.text("Uses AMLL's public GitHub index and TTML files without login. Community versions need confirmation and have unknown durations; only line-by-line display is supported. The repository's CC0 does not replace lyric rights; this app does not bundle lyrics."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Link("AMLL 来源与贡献者说明", destination: URL(string: "https://github.com/amll-dev/amll-ttml-db")!)
-                    DisclosureGroup("粘贴 JSON 配置") {
+                    Link(L10n.text("AMLL source and contributors"), destination: URL(string: "https://github.com/amll-dev/amll-ttml-db")!)
+                    DisclosureGroup(L10n.text("Paste JSON configuration")) {
                         TextEditor(text: $jsonText).font(.caption.monospaced()).frame(height: 90)
-                            .accessibilityLabel("源 JSON 配置")
-                        Button("检查粘贴配置") { prepare(Data(jsonText.utf8)) }.disabled(jsonText.isEmpty)
+                            .accessibilityLabel(L10n.text("Source JSON configuration"))
+                        Button(L10n.text("Check pasted configuration")) { prepare(Data(jsonText.utf8)) }.disabled(jsonText.isEmpty)
                     }
                     if !message.isEmpty { Text(message).font(.caption).accessibilityIdentifier("source-message") }
                     if let error = registry.store.loadError { Text(error).foregroundStyle(.red) }
                     if !setupMessage.isEmpty { Text(setupMessage).foregroundStyle(.red) }
                 }
-                Section("授权来源（尚未接入）") {
-                    Text("Musixmatch 和 LyricFind 需要官方密钥、时间轴歌词权限与展示条款。当前未配置，不发送请求，也不使用非官方令牌。")
+                Section(L10n.text("Licensed services (not connected)")) {
+                    Text(L10n.text("Musixmatch and LyricFind require official keys, timed-lyric access and display terms. They are not configured; no requests or unofficial tokens are used."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Link("Musixmatch 官方开发者入口", destination: URL(string: "https://developer.musixmatch.com/")!)
-                    Link("LyricFind 官方歌词服务", destination: URL(string: "https://www.lyricfind.com/products/lyric-display")!)
+                    Link(L10n.text("Official Musixmatch developer portal"), destination: URL(string: "https://developer.musixmatch.com/")!)
+                    Link(L10n.text("Official LyricFind lyric services"), destination: URL(string: "https://www.lyricfind.com/products/lyric-display")!)
                 }
-                Section("已添加来源") {
-                    Text("已保存 \(registry.store.sources.count) 个源，启用 \(registry.store.sources.filter(\.isEnabled).count) 个。")
+                Section(L10n.text("Added sources")) {
+                    Text(L10n.text("Saved %1$@ sources, %2$@ enabled.", String(describing: registry.store.sources.count), String(describing: registry.store.sources.filter(\.isEnabled).count)))
                         .font(.caption.monospaced())
-                    if registry.store.sources.isEmpty { Text("尚无自定义源。导入配置不等于来源已验证。") }
+                    if registry.store.sources.isEmpty { Text(L10n.text("No custom sources yet. Importing a configuration does not verify the service.")) }
                     ForEach(registry.store.sources) { source in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
@@ -80,26 +83,26 @@ struct PreviewSourcesView: View {
                                     else { mutate { try registry.store.setEnabled(source.id, false) } }
                                 })).toggleStyle(.switch)
                                 Spacer()
-                                Button("测试 \(source.manifest.name)") { test(source) }
+                                Button(L10n.text("Test %1$@", String(describing: source.manifest.name))) { test(source) }
                                     .disabled(testing != nil || testTrack.isEmpty)
-                                Button("删除 \(source.manifest.name)", role: .destructive) { removing = source; confirmRemove = true }
+                                Button(L10n.text("Delete %1$@", String(describing: source.manifest.name)), role: .destructive) { removing = source; confirmRemove = true }
                                     .disabled(testing == source.id)
                             }
                             Text(PlatformLyricSource(rawValue: source.manifest.apiFormat.rawValue)?.domains ?? source.manifest.baseURL)
                                 .font(.caption).textSelection(.enabled)
-                            Text(statuses[source.id] ?? "尚未测试。测试只验证检索和取词，不确认录音同步。")
+                            Text(statuses[source.id] ?? L10n.text("Not tested. Testing checks search and lyric retrieval, not recording synchronization."))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
-                Section("有界连接测试") {
-                    TextField("测试歌名", text: $testTrack)
-                    TextField("测试歌手（可选）", text: $testArtist)
-                    Text("点击测试将把这些歌名、歌手发送给该服务，即使来源当前未启用。搜索与一个候选的取词共用八秒预算（酷狗取词含索引和下载两步）；不会替换当前歌词。")
+                Section(L10n.text("Time-bounded connection test")) {
+                    TextField(L10n.text("Test song title"), text: $testTrack)
+                    TextField(L10n.text("Test artist (optional)"), text: $testArtist)
+                    Text(L10n.text("Testing sends this title and artist to the service, even if the source is off. Search and lyric retrieval for one candidate share an 8-second budget (Kugou also needs index and download requests). Current lyrics are not replaced."))
                         .font(.caption).foregroundStyle(.secondary)
-                    if testing != nil { Button("取消来源测试") { testTask?.cancel() } }
+                    if testing != nil { Button(L10n.text("Cancel source test")) { testTask?.cancel() } }
                 }
-                Text("来源按内置 LRCLIB、自定义源导入顺序尝试。设置变化会清除旧候选，需重新搜索；这里只保存独立版配置。")
+                Text(L10n.text("Sources run in order: built-in LRCLIB, then imported sources. Settings changes clear candidates and require a new search. Only this app's configuration is saved here."))
                     .font(.caption).foregroundStyle(.secondary)
             }.formStyle(.grouped)
         }
@@ -114,27 +117,27 @@ struct PreviewSourcesView: View {
                 prepare(try file.read(upToCount: 64 * 1024 + 1) ?? Data())
             } catch { message = error.localizedDescription }
         }
-        .alert("确认导入歌词源", isPresented: $confirmImport) {
-            Button("导入并启用") { importPending(enabled: true) }
-            Button("仅导入，不启用") { importPending(enabled: false) }
-            Button("取消导入", role: .cancel) { pendingManifest = nil; pendingData = nil }
+        .alert(L10n.text("Confirm lyric source import"), isPresented: $confirmImport) {
+            Button(L10n.text("Import and enable")) { importPending(enabled: true) }
+            Button(L10n.text("Import without enabling")) { importPending(enabled: false) }
+            Button(L10n.text("Cancel import"), role: .cancel) { pendingManifest = nil; pendingData = nil }
         } message: {
-            Text("\(pendingManifest?.name ?? "")\n\(pendingManifest?.baseURL ?? "")\n\(requestNotice(pendingManifest)) 仅导入不会发请求。")
+            Text(L10n.text("%1$@\n%2$@\n%3$@ Importing alone makes no requests.", String(describing: pendingManifest?.name ?? ""), String(describing: pendingManifest?.baseURL ?? ""), String(describing: requestNotice(pendingManifest))))
         }
-        .alert("启用来源？", isPresented: $confirmEnable) {
-            Button("确认启用") {
+        .alert(L10n.text("Enable source?"), isPresented: $confirmEnable) {
+            Button(L10n.text("Confirm enabling")) {
                 if let source = enabling { mutate { try registry.store.setEnabled(source.id, true) } }
                 enabling = nil
             }
-            Button("取消启用", role: .cancel) { enabling = nil }
+            Button(L10n.text("Cancel enabling"), role: .cancel) { enabling = nil }
         } message: { Text("\(enabling?.manifest.baseURL ?? "")\n\(requestNotice(enabling?.manifest))") }
-        .alert("删除独立来源？", isPresented: $confirmRemove) {
-            Button("确认删除来源", role: .destructive) {
+        .alert(L10n.text("Delete source from this app?"), isPresented: $confirmRemove) {
+            Button(L10n.text("Confirm source deletion"), role: .destructive) {
                 if let source = removing { mutate { try registry.store.remove(source.id) }; statuses[source.id] = nil }
                 removing = nil
             }
-            Button("取消删除", role: .cancel) { removing = nil }
-        } message: { Text("只删除 \(removing?.manifest.name ?? "") 的独立配置，不修改正式版。") }
+            Button(L10n.text("Cancel deletion"), role: .cancel) { removing = nil }
+        } message: { Text(L10n.text("Only %1$@'s configuration in this app will be deleted; other editions are unchanged.", String(describing: removing?.manifest.name ?? ""))) }
         .onAppear { testTrack = initialTrack; testArtist = initialArtist }
         .onDisappear { testTask?.cancel() }
     }
@@ -145,11 +148,11 @@ struct PreviewSourcesView: View {
     }
     private func requestNotice(_ manifest: LyricSourceManifest?) -> String {
         if let format = manifest?.apiFormat, let platform = PlatformLyricSource(rawValue: format.rawValue) {
-            return "向 \(platform.domains) 发送搜索歌名、歌手和平台歌曲 ID，仅取歌词；不发送账户、令牌或本地文件。"
+            return L10n.text("Sends title, artist and platform song ID to %1$@ for lyrics only; no account, token or local file is sent.", String(describing: platform.domains))
         }
         return manifest?.apiFormat == .amllTTML
-            ? "启用后读取官方公开索引，在本机匹配歌名、歌手，再按社区 ID 请求 TTML 文件；不发送账户、令牌或本地文件。"
-            : "启用后向此服务发送搜索歌名和歌手；不发送账户、令牌或本地文件。"
+            ? L10n.text("After enabling, reads the public index, matches title and artist locally, then requests TTML by community ID. No account, token or local file is sent.")
+            : L10n.text("After enabling, sends the search title and artist to this service. No account, token or local file is sent.")
     }
     private func importPending(enabled: Bool) {
         defer { pendingManifest = nil; pendingData = nil }
@@ -158,7 +161,7 @@ struct PreviewSourcesView: View {
     }
     private func mutate(_ operation: () throws -> Void) {
         testTask?.cancel()
-        do { try operation(); changed(); message = "配置已保存；请回到工作台重新搜索。" }
+        do { try operation(); changed(); message = L10n.text("Configuration saved. Return to the workspace and search again.") }
         catch { message = error.localizedDescription }
     }
     private func test(_ source: LyricSourceConfiguration) {
@@ -166,7 +169,7 @@ struct PreviewSourcesView: View {
         let artist = testArtist.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !track.isEmpty else { return }
         testing = source.id
-        statuses[source.id] = "正在测试，仅发送测试歌名和歌手…"
+        statuses[source.id] = L10n.text("Testing with only the test title and artist...")
         testTask = Task { @MainActor in
             defer { testing = nil }
             do {
@@ -180,10 +183,10 @@ struct PreviewSourcesView: View {
                     return LyricFetchPipeline.isValid(try await provider.lyrics(for: song))
                 }
                 try Task.checkCancellation()
-                statuses[source.id] = success ? "连接、检索和时间轴取词通过；录音版本及听感未验证。" : "连接成功，但未获得匹配的有效时间轴。"
-            } catch is CancellationError { statuses[source.id] = "测试已取消。" }
-            catch PlatformLyricError.untimedLyrics { statuses[source.id] = "连接和检索成功，但该候选仅提供无时间轴歌词，无法用于同步。" }
-            catch { statuses[source.id] = "来源测试失败：\(error.localizedDescription)；不能据此判断无歌词。" }
+                statuses[source.id] = success ? L10n.text("Connection, search and timed-lyric retrieval passed. Recording version and audible synchronization are unverified.") : L10n.text("Connected, but no matching valid timeline was retrieved.")
+            } catch is CancellationError { statuses[source.id] = L10n.text("Test canceled.") }
+            catch PlatformLyricError.untimedLyrics { statuses[source.id] = L10n.text("Connected and searched successfully, but this candidate has no lyric timing and cannot be synchronized.") }
+            catch { statuses[source.id] = L10n.text("Source test failed: %1$@. This does not prove lyrics are unavailable.", String(describing: error.localizedDescription)) }
         }
     }
 }

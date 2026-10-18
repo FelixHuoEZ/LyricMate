@@ -1,0 +1,1 @@
+"NSAppleEventsUsageDescription" = "Read Spotify track information, playback state and position to synchronize lyrics. Playback, pause, previous/next and 10-second seeks happen only when you click a control. Spotify is never launched automatically.";

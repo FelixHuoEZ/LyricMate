@@ -1,45 +1,56 @@
 # LyricMate Alpha
 
-作者：我和 codex
+English | [简体中文](README.zh-CN.md)
 
-macOS 菜单栏与透明双行悬浮歌词工具，跟随已经运行的 Spotify 桌面客户端。
+Authors: [FelixHuoEZ](https://github.com/FelixHuoEZ) and codex.
 
-这是独立开发中的源码 Alpha，不是 Lyric Fever 官方发行版，也不是 Spotify 或歌词平台的官方产品。部分代码基于 [Lyric Fever](https://github.com/aviwad/LyricFever)，保留原 MIT 许可与第三方署名。当前没有官方安装包、自动更新或稳定性承诺。
+Menu-bar lyrics and a transparent, two-line floating lyric window for macOS, following an already-running Spotify desktop client.
 
-## 功能
+This is a standalone source alpha, not an official Lyric Fever release or a product of Spotify or any lyric service. Parts are based on [Lyric Fever](https://github.com/aviwad/LyricFever), with the original MIT license and third-party attribution preserved. There is no official installer, automatic updater or stability guarantee yet.
 
-- 菜单栏歌词、透明双行浮层、智能换行、向上换句与开唱提示。
-- 可选歌手搜索、仅歌名补搜、匹配评分、候选先载入后升级、人工选择与偏移重核验。
-- 播放／暂停、上一首／下一首与菜单中的前后跳转；浮层控件仅悬停时显示。
-- 本地 LRC、设置记忆、备份与有界本机诊断。不附带歌词库或账户凭据。
+## Features
 
-匹配分不是同步准确率；临时匹配可能是错误录音。逐字演唱、重音／吸气标记不在当前范围内。
+- Menu-bar lyrics, transparent two-line overlay, smart wrapping, upward line transitions and a singing countdown.
+- Optional artist input, title-only fallback, match scores, progressive candidate upgrades, manual selection and revalidated offsets.
+- Play/pause, previous/next and menu-based seeking. Floating controls appear on hover and stay hidden when the window is locked for click-through.
+- Local LRC files, saved settings, configuration backups and bounded local diagnostics. No lyric database or account credentials are bundled.
 
-## 构建与测试
+A match score is not a synchronization accuracy percentage; provisional matches may refer to another recording. Word-by-word singing, vocal-emphasis and breath annotations are outside the current scope.
 
-目前构建目标仅为 Apple Silicon、macOS 15 及以上，需安装完整 Xcode 并使 `xcrun --show-sdk-path` 可用。Intel 和更早系统未验收。独立构建不依赖原版 Xcode 工程或第三方编译宏。
+## Languages
+
+The interface follows the system's preferred app language: English or Simplified Chinese, with English as the fallback for unsupported languages. Relaunch after changing the app language in macOS. Lyrics, song metadata and user-supplied source names are displayed as provided, not translated.
+
+Language selection does not rename configuration keys, source IDs, data folders or saved recording fingerprints. Existing connections, floating-window settings, sources and offsets remain in the same configuration domain.
+
+## Build and Test
+
+The current target is Apple Silicon on macOS 15 or later. Install full Xcode and ensure `xcrun --show-sdk-path` works. Intel and earlier systems have not been accepted. The standalone build does not use the upstream Xcode project or third-party compiler macros.
 
 ```sh
 swift test -Xswiftc -strict-concurrency=complete -Xswiftc -warnings-as-errors
+python3 scripts/check-localization.py
 bash scripts/build-lyric-preview.sh
 python3 scripts/public-source.py check
 python3 scripts/public-source.py archive
 ```
 
-应用输出为 `dist/LyricMate Alpha.app`，源码归档为 `dist/LyricMate-source.tar.gz`。脚本只构建，不安装、不启动、不覆盖已有输出；再次构建前将旧输出移走。构建仅使用本机 ad-hoc 签名，不是 Developer ID、公证或 Gatekeeper 发行验收；不建议把此产物直接发给普通用户。
+Outputs are `dist/LyricMate Alpha.app` and `dist/LyricMate-source.tar.gz`. Scripts only build; they do not install, launch or overwrite existing output. Move an older output aside before rebuilding. The app is ad-hoc signed locally, not Developer ID signed or notarized; this is not Gatekeeper or installer acceptance. Do not distribute this build as a finished installer.
 
-## 使用与权限
+## Use and Permissions
 
-1. 自行启动 Spotify 和所构建的 Alpha。
-2. 点击“启用只读跟随 Spotify”，自行决定是否授予 macOS 自动化权限。
-3. 打开悬浮歌词或手动搜索；可以只填歌名。所有播放控制必须明确点击。
+1. Start Spotify and the built alpha yourself.
+2. Click **Enable read-only Spotify following** and decide whether to grant macOS Automation permission.
+3. Show floating lyrics or search manually. A title alone is enough. Playback controls act only on explicit clicks.
 
-不会自行登录、读取 Spotify Cookie 或启动 Spotify；失去播放状态后停止实时高亮。初始默认来源是 LRCLIB；其他适配器需在源管理中主动添加，平台接口和内容权利仍有发行限制。详情见 [来源说明](docs/sources.md)。
+The app does not log in, read Spotify cookies or launch Spotify automatically. Live highlighting stops when playback state is unavailable. LRCLIB is the initial default; other adapters must be added explicitly. Experimental platform endpoints may change, fail or be rate-limited. Musixmatch and LyricFind are not connected without official access and display rights.
 
-本地测试标识为 `local.lyricmate.alpha`，与其他版本隔离，不自动迁移其配置。正式发行标识、公开维护身份和反馈仓库将在发行前确定；内部目录／模块保留部分历史命名，以降低行为变更风险。
+The alpha app identifier is `local.lyricmate.alpha`, with settings in `local.lyricmate.alpha.daily.v1`. It is isolated from other editions and does not migrate their settings automatically. Existing internal directory and module names are retained to limit behavioral risk.
 
-## 隐私与维护
+## Privacy, Sources and Maintenance
 
-请阅读 [隐私说明](docs/privacy.md)、[安全边界](SECURITY.md)、[需求与设计](docs/requirements-and-design.md) 和 [发布检查](docs/release-checklist.md)。应用本身没有上传源码或诊断的功能。反馈缺陷时仅提供脱敏步骤、版本和错误类别，勿附账户令牌、个人设置、播放记录或完整歌词。
+Searches send the entered title, artist and necessary candidate identifiers to the selected services. Local imports do not use the network. Settings, lyric files and bounded diagnostics stay on this Mac unless you export or share them. Diagnostic exports may include track metadata; review them before sharing. The app has no source-code or diagnostic-upload feature.
 
-代码适用 [MIT](LICENSE) 及 [第三方声明](NOTICE.md)；歌词、歌曲、商标与服务不因代码许可证获得额外授权。
+Additional documentation, currently in Chinese: [privacy](docs/privacy.md), [source policy](docs/sources.md), [security](SECURITY.md), [requirements and design](docs/requirements-and-design.md), and [release checklist](docs/release-checklist.md). When reporting a bug, share only redacted steps, version and error categories, not account tokens, personal settings, playback records or full lyrics.
+
+Code is covered by [MIT](LICENSE) and the [third-party notices](NOTICE.md). These licenses do not grant rights to lyrics, recordings, trademarks or external services. Public distribution and signed-installer acceptance remain separate release gates.
