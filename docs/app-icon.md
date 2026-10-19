@@ -16,6 +16,13 @@ LyricFever or Spotify artwork was supplied as an input. It contains no screensho
 lyrics, account data or local configuration. The design does not imply endorsement
 by an external service.
 
+The two checked-in icon assets are distributed under
+[MIT](../LICENSES/LyricMate-assets-MIT.txt), to the extent the contributor holds
+rights in them. AI-assisted output is not a guarantee of uniqueness, exclusive
+copyright protection or trademark clearance. The working name and mark must be
+reviewed separately before commercial branding; no automatic rename or legal
+clearance is implied by including them in source.
+
 ## Build And Check
 
 The normal build copies the checked-in icon before code signing and validates the

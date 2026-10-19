@@ -372,6 +372,20 @@ final class PreviewController {
         return target
     }
 
+    func shareDiagnosticsPreview() -> String {
+        (try? PreviewShareDiagnostics.preview(reads: readDiagnostics.events + readDiagnostics.failures,
+                                              controls: controlDiagnostics.entries)) ?? "{}"
+    }
+
+    func saveShareDiagnostics(_ preview: String) {
+        do {
+            let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("local.lyricmate.alpha/diagnostics/share", isDirectory: true)
+            try PreviewShareDiagnostics.save(preview, to: directory)
+            traceMessage = L10n.text("Redacted diagnostics saved locally. Nothing was uploaded.")
+        } catch { traceMessage = L10n.text("Could not save diagnostics.") }
+    }
+
     func exportTrace(to directory: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("local.lyricmate.alpha/diagnostics/manual", isDirectory: true)) {
         recordTraceIfChanged(force: true)
@@ -438,6 +452,12 @@ struct LyricPreviewView: View {
     @State private var autoScroll = true
     @State private var showSources = false
     @State private var showFiles = false
+    private struct ShareDiagnosticsPreview: Identifiable {
+        let id = UUID()
+        let text: String
+    }
+    @State private var pendingShareDiagnostics: ShareDiagnosticsPreview?
+    @State private var confirmFullDiagnostics = false
     private enum QueryFocus: Hashable { case track, artist }
     @FocusState private var queryFocus: QueryFocus?
     @State private var returnQueryFocus: QueryFocus = .track
@@ -464,6 +484,8 @@ struct LyricPreviewView: View {
                     if !controller.enabled && controller.allowsPlaybackRead {
                         Button(L10n.text("Enable read-only Spotify following")) { controller.requestPermission() }
                             .disabled(controller.connecting)
+                        Text(L10n.text("Following can automatically send song title and artist to enabled lyric services. They also receive your IP address; local imports stay offline."))
+                            .font(.caption2).foregroundStyle(.secondary).frame(maxWidth: 340)
                     }
                     Text(L10n.text("No login credentials · Playback changes only on clicks · Local imports stay offline")).font(.caption2).foregroundStyle(.secondary)
                     Text(Self.versionLabel).font(.caption2.monospaced()).accessibilityIdentifier("preview-version")
@@ -613,7 +635,10 @@ struct LyricPreviewView: View {
 #endif
                 Spacer()
                 Text(controller.traceMessage).font(.caption2)
-                Button(L10n.text("Save sync diagnostics")) { controller.exportTrace() }
+                Button(L10n.text("Preview redacted diagnostics")) {
+                    pendingShareDiagnostics = ShareDiagnosticsPreview(text: controller.shareDiagnosticsPreview())
+                }
+                Button(L10n.text("Full local diagnostics...")) { confirmFullDiagnostics = true }
             }.padding(12)
             if !controller.automaticDiagnosticsMessage.isEmpty {
                 Text(controller.automaticDiagnosticsMessage).font(.caption2).foregroundStyle(.secondary).padding(.bottom, 8)
@@ -627,6 +652,32 @@ struct LyricPreviewView: View {
                                initialTrack: session.trackQuery, initialArtist: session.artistQuery)
         }
         .sheet(isPresented: $showFiles, onDismiss: restoreQueryFocus) { PreviewFilesView(controller: controller) }
+        .sheet(item: $pendingShareDiagnostics) { preview in
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L10n.text("Preview redacted diagnostics")).font(.headline)
+                Text(L10n.text("Only diagnostic stages, statuses, control actions, timings and numeric errors are included. No song, source URL, process ID, request ID, absolute time or lyrics. Review before sharing; saving does not upload."))
+                    .font(.caption)
+                ScrollView {
+                    Text(verbatim: preview.text).font(.caption.monospaced()).foregroundStyle(.primary)
+                        .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("redacted-diagnostics-preview")
+                }
+                HStack {
+                    Button(L10n.text("Cancel")) { pendingShareDiagnostics = nil }
+                    Spacer()
+                    Button(L10n.text("Save reviewed copy locally")) {
+                        controller.saveShareDiagnostics(preview.text)
+                        pendingShareDiagnostics = nil
+                    }
+                }
+            }.padding(20).frame(width: 640, height: 480)
+        }
+        .alert(L10n.text("Save detailed diagnostics locally?"), isPresented: $confirmFullDiagnostics) {
+            Button(L10n.text("Cancel"), role: .cancel) {}
+            Button(L10n.text("Save sync diagnostics")) { controller.exportTrace() }
+        } message: {
+            Text(L10n.text("Detailed diagnostics contain song metadata, playback history, timestamps and process information. Keep them private. Use the redacted preview for public feedback."))
+        }
         .defaultFocus($queryFocus, returnQueryFocus)
         .onChange(of: queryFocus) { _, focus in
             if let focus { lastQueryFocus = focus }

@@ -9,6 +9,15 @@ source = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(source)
 
 class SourceExportTests(unittest.TestCase):
+    def test_only_reviewed_maintenance_files_are_permitted(self):
+        for name in source.GITHUB_FILES | {'CONTRIBUTING.md', 'LICENSES/LyricMate-assets-MIT.txt',
+                                          'scripts/scan-secrets.sh', 'scripts/check-release-safety.py',
+                                          'scripts/test-release-safety.py'}:
+            self.assertTrue(source.permitted(name))
+        for name in ['.github/workflows/release.yml', '.github/credentials.json',
+                     '.github/ISSUE_TEMPLATE/private.yml', 'LICENSES/private.txt', '.gitleaks.toml']:
+            self.assertFalse(source.permitted(name))
+
     def test_only_named_app_icons_are_permitted(self):
         for name in ['LyricPreview/Resources/LyricMate.icns',
                      'LyricPreview/Resources/LyricMateIcon-1024.png',

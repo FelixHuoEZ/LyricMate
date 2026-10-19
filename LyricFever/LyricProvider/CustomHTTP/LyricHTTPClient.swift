@@ -91,8 +91,10 @@ final class LyricHTTPClient {
     private var retryAfter: Date?
     private let requestBudget: Double
     private let timeout: (@Sendable () async throws -> Void)?
+    private let serviceGate: LyricServiceRequestGate
 
-    init(session: URLSession? = nil, requestBudget: Double = 5, timeout: (@Sendable () async throws -> Void)? = nil) {
+    init(session: URLSession? = nil, requestBudget: Double = 5, timeout: (@Sendable () async throws -> Void)? = nil,
+         serviceGate: LyricServiceRequestGate = .shared) {
         if let session { self.session = session }
         else {
             let configuration = URLSessionConfiguration.ephemeral
@@ -104,6 +106,7 @@ final class LyricHTTPClient {
         }
         self.requestBudget = requestBudget
         self.timeout = timeout
+        self.serviceGate = serviceGate
     }
 
     deinit { session.invalidateAndCancel() }
@@ -114,6 +117,9 @@ final class LyricHTTPClient {
         var outcome = "failed"
         defer { lastReceipt = progress.receipt(outcome: outcome) }
         do {
+            let managed = LyricServiceRequestGate.manages(url)
+            if managed { try await serviceGate.acquire() }
+            defer { if managed { serviceGate.release() } }
             let data = try await performGet(url, maximumBytes: maximumBytes, mimeTypes: mimeTypes, referer: referer,
                                             allowMissingContentType: allowMissingContentType, progress: progress)
             outcome = "success"
@@ -131,7 +137,7 @@ final class LyricHTTPClient {
         request.httpMethod = "GET"
         request.timeoutInterval = requestBudget
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("LyricMate/0.9.2-alpha (local source build)", forHTTPHeaderField: "User-Agent")
+        request.setValue("LyricMate/0.9.2-alpha (https://github.com/FelixHuoEZ/LyricMate)", forHTTPHeaderField: "User-Agent")
         if let referer { request.setValue(referer, forHTTPHeaderField: "Referer") }
         return try await withLyricDeadline(seconds: requestBudget, timeout: timeout) { [self, request] in
             try Task.checkCancellation()
@@ -152,6 +158,7 @@ final class LyricHTTPClient {
                     formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
                     retryAfter = formatter.date(from: value) ?? Date().addingTimeInterval(30)
                 }
+                if LyricServiceRequestGate.manages(url), let retryAfter { serviceGate.limit(until: retryAfter) }
                 throw LyricSourceError.rateLimited
             }
             guard http.statusCode == 200 else { throw LyricSourceError.httpStatus(http.statusCode) }

@@ -11,10 +11,13 @@ import tarfile
 ROOT = Path(__file__).resolve().parent.parent
 GENERATED = {'.git', '.build', '.swiftpm', 'dist', '__pycache__'}
 ROOT_FILES = {'LICENSE', 'NOTICE.md', 'README.md', 'README.zh-CN.md', 'SECURITY.md', 'Package.swift',
-              '.gitignore', 'release-files.txt'}
+              'CONTRIBUTING.md', '.gitignore', 'release-files.txt'}
 DOCS = {'privacy.md', 'sources.md', 'requirements-and-design.md', 'release-checklist.md', 'app-icon.md'}
 SCRIPTS = {'build-lyric-preview.sh', 'public-source.py', 'test-public-source.py', 'check-localization.py',
-           'build-lyricmate-icon.sh', 'test-lyricmate-icon.sh'}
+           'build-lyricmate-icon.sh', 'test-lyricmate-icon.sh', 'scan-secrets.sh',
+           'check-release-safety.py', 'test-release-safety.py'}
+GITHUB_FILES = {'.github/workflows/source-checks.yml', '.github/ISSUE_TEMPLATE/bug_report.yml',
+                '.github/ISSUE_TEMPLATE/config.yml'}
 ICON_ASSETS = {'LyricPreview/Resources/LyricMateIcon-1024.png',
                'LyricPreview/Resources/LyricMate.icns'}
 
@@ -26,12 +29,14 @@ def permitted(name):
         return False
     if len(parts) == 1:
         return name in ROOT_FILES
+    if parts[0] == '.github':
+        return name in GITHUB_FILES
     if parts[0] == 'docs':
         return len(parts) == 2 and parts[1] in DOCS
     if parts[0] == 'scripts':
         return len(parts) == 2 and parts[1] in SCRIPTS
     if parts[0] == 'LICENSES':
-        return len(parts) == 2 and parts[1] == 'SpotlightLyrics-MIT.txt'
+        return len(parts) == 2 and parts[1] in {'SpotlightLyrics-MIT.txt', 'LyricMate-assets-MIT.txt'}
     if parts[0] == 'Localization':
         return name == 'Localization/L10n.swift' or (len(parts) == 4 and parts[1] == 'Resources'
             and parts[2] in {'en.lproj', 'zh-Hans.lproj'} and parts[3] in {'Localizable.strings', 'InfoPlist.strings'})
@@ -89,12 +94,13 @@ def archive(data, destination):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['check', 'archive'])
+    parser.add_argument('--output', type=Path, help='New archive path; never overwrites an existing file')
     args = parser.parse_args()
     try:
         data = collect(ROOT)
         result = {'files': len(data), 'tree_sha256': tree_digest(data)}
         if args.action == 'archive':
-            target = ROOT / 'dist/LyricMate-source.tar.gz'
+            target = args.output or ROOT / 'dist/LyricMate-source.tar.gz'
             archive(data, target)
             result['archive_sha256'] = hashlib.sha256(target.read_bytes()).hexdigest()
         print(json.dumps(result, sort_keys=True))

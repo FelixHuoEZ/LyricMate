@@ -326,3 +326,14 @@
 "Waiting to sing: %1$@" = "待开唱：%1$@";
 "macOS denied this app access to read Spotify (-1743); permissions were not changed." = "系统拒绝此预览读取 Spotify（-1743）；没有更改权限。";
 "macOS has not allowed Spotify control. Check Automation permissions." = "系统未允许控制 Spotify；请检查自动化权限。";
+"This platform adapter is unavailable in the source Alpha. Its saved configuration is retained without network access." = "该平台适配器在源码 Alpha 中暂不可用；已有配置保留，不会通过它联网。";
+"The source Alpha supports LRCLIB, local LRC, AMLL and credential-free custom HTTPS JSON. Kugou, NetEase, Kuwo, QQ Music and Migu adapters are unavailable pending access and display-rights review. Existing configurations are retained, not enabled or contacted." = "源码 Alpha 支持 LRCLIB、本地 LRC、AMLL 和不带凭据的自定义 HTTPS JSON。酷狗、网易云、酷我、QQ 音乐和咪咕适配器暂不可用，待核对接入与展示权利；已有配置保留，不会通过它们启用或联网。";
+"Redacted diagnostics saved locally. Nothing was uploaded." = "脱敏诊断已保存到本机，未上传任何内容。";
+"Following can automatically send song title and artist to enabled lyric services. They also receive your IP address; local imports stay offline." = "跟随播放可能会自动向已启用的歌词服务发送歌名和歌手，服务方也会收到你的 IP 地址；本地导入保持离线。";
+"Preview redacted diagnostics" = "预览脱敏诊断";
+"Full local diagnostics..." = "详细本地诊断…";
+"Only diagnostic stages, statuses, control actions, timings and numeric errors are included. No song, source URL, process ID, request ID, absolute time or lyrics. Review before sharing; saving does not upload." = "仅包含诊断步骤、状态、控制动作类型、耗时和数字错误码，不含歌曲、来源地址、进程或请求标识、绝对时间和歌词。分享前请核对；保存不会上传。";
+"Save reviewed copy locally" = "将已核对副本保存到本机";
+"Save detailed diagnostics locally?" = "将详细诊断保存到本机？";
+"Detailed diagnostics contain song metadata, playback history, timestamps and process information. Keep them private. Use the redacted preview for public feedback." = "详细诊断包含歌曲资料、播放记录、时间戳和进程信息，请妥善保密。公开反馈请使用脱敏预览。";
+"Testing sends this title and artist to an allowed service, even if it is off. Search and one lyric retrieval share an 8-second budget. Unavailable platform adapters cannot be tested. Current lyrics are not replaced." = "测试会向允许的服务发送此歌名和歌手，即使该源当前关闭；搜索和一次取词共用八秒预算。暂不可用的平台不能测试，不会替换当前歌词。";

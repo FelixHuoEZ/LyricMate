@@ -1,5 +1,10 @@
+.github/ISSUE_TEMPLATE/bug_report.yml
+.github/ISSUE_TEMPLATE/config.yml
+.github/workflows/source-checks.yml
 .gitignore
+CONTRIBUTING.md
 LICENSE
+LICENSES/LyricMate-assets-MIT.txt
 LICENSES/SpotlightLyrics-MIT.txt
 Localization/L10n.swift
 Localization/Resources/en.lproj/InfoPlist.strings
@@ -9,6 +14,7 @@ Localization/Resources/zh-Hans.lproj/Localizable.strings
 LyricFever/LyricProvider/CustomHTTP/AMLLSource.swift
 LyricFever/LyricProvider/CustomHTTP/CustomHTTPSourceProvider.swift
 LyricFever/LyricProvider/CustomHTTP/LyricHTTPClient.swift
+LyricFever/LyricProvider/CustomHTTP/LyricServiceRequestGate.swift
 LyricFever/LyricProvider/CustomHTTP/LyricSourceRegistry.swift
 LyricFever/LyricProvider/CustomHTTP/LyricSourceStore.swift
 LyricFever/LyricProvider/CustomHTTP/PlatformLyricSource.swift
@@ -48,6 +54,7 @@ LyricPreview/PreviewFloatingPanel.swift
 LyricPreview/PreviewLibraryView.swift
 LyricPreview/PreviewLyricWrapping.swift
 LyricPreview/PreviewPresentationSettings.swift
+LyricPreview/PreviewShareDiagnostics.swift
 LyricPreview/PreviewSourcesView.swift
 LyricPreview/PreviewWrappedTextView.swift
 LyricPreview/ReadOnlySpotifyReader.swift
@@ -66,6 +73,7 @@ Tests/LyricFeverCoreTests/LyricFetchPipelineTests.swift
 Tests/LyricFeverCoreTests/LyricHTTPReadingTests.swift
 Tests/LyricFeverCoreTests/LyricPreviewSessionTests.swift
 Tests/LyricFeverCoreTests/LyricSearchPipelineTests.swift
+Tests/LyricFeverCoreTests/LyricServiceRequestGateTests.swift
 Tests/LyricFeverCoreTests/LyricSongMatcherTests.swift
 Tests/LyricFeverCoreTests/LyricSourceFailureTests.swift
 Tests/LyricFeverCoreTests/LyricSourceRegistryTests.swift
@@ -82,6 +90,7 @@ Tests/LyricFeverCoreTests/PreviewProgressiveSelectionTests.swift
 Tests/LyricFeverCoreTests/PreviewV4Tests.swift
 Tests/LyricFeverCoreTests/TestSupport.swift
 Tests/LyricMateLocalizationTests/LocalizationTests.swift
+Tests/LyricPreviewPolicyTests/LocalizationConfigurationTests.swift
 Tests/LyricPreviewPolicyTests/PlaybackControlDiagnosticsTests.swift
 Tests/LyricPreviewPolicyTests/PlaybackControlPolicyTests.swift
 Tests/LyricPreviewPolicyTests/PlaybackFailureSequenceTests.swift
@@ -91,10 +100,10 @@ Tests/LyricPreviewPolicyTests/PlaybackProcessDiscoveryTests.swift
 Tests/LyricPreviewPolicyTests/PlaybackReadDiagnosticsTests.swift
 Tests/LyricPreviewPolicyTests/PlaybackReadGateTests.swift
 Tests/LyricPreviewPolicyTests/PlaybackReadRecoveryTests.swift
-Tests/LyricPreviewPolicyTests/LocalizationConfigurationTests.swift
 Tests/LyricPreviewPolicyTests/PreviewFloatingLayoutPolicyTests.swift
 Tests/LyricPreviewPolicyTests/PreviewLyricWrappingTests.swift
 Tests/LyricPreviewPolicyTests/PreviewPresentationSettingsTests.swift
+Tests/LyricPreviewPolicyTests/PreviewShareDiagnosticsTests.swift
 docs/app-icon.md
 docs/privacy.md
 docs/release-checklist.md
@@ -104,6 +113,9 @@ release-files.txt
 scripts/build-lyric-preview.sh
 scripts/build-lyricmate-icon.sh
 scripts/check-localization.py
+scripts/check-release-safety.py
 scripts/public-source.py
-scripts/test-public-source.py
+scripts/scan-secrets.sh
 scripts/test-lyricmate-icon.sh
+scripts/test-public-source.py
+scripts/test-release-safety.py

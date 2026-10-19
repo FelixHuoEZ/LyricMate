@@ -4,6 +4,45 @@ import XCTest
 
 @MainActor
 final class LyricSourceRegistryTests: XCTestCase {
+    func testSourceAlphaRetainsEveryPlatformConfigurationButCannotConstructOrContactIt() throws {
+        let domain = "LyricMate.SourcePolicyTests.\(UUID())"
+        let defaults = UserDefaults(suiteName: domain)!
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let store = LyricSourceStore(defaults: defaults)
+        for platform in PlatformLyricSource.allCases {
+            _ = try store.importManifest(JSONEncoder().encode(platform.manifest))
+        }
+        let before = defaults.data(forKey: LyricSourceStore.storageKey)
+        let identities = store.sources.map(\.id)
+        var constructions = 0
+        let registry = LyricSourceRegistry(store: LyricSourceStore(defaults: defaults)) {
+            constructions += 1
+            return try CustomHTTPSourceProvider(manifest: $0)
+        }
+        XCTAssertTrue(registry.enabledProviders.isEmpty)
+        for source in registry.store.sources {
+            XCTAssertFalse(registry.allows(source.manifest))
+            XCTAssertThrowsError(try registry.validatePolicy(source.manifest))
+            XCTAssertThrowsError(try registry.provider(for: source))
+            XCTAssertTrue(source.isEnabled)
+        }
+        XCTAssertEqual(constructions, 0)
+        XCTAssertEqual(registry.store.sources.map(\.id), identities)
+        XCTAssertEqual(defaults.data(forKey: LyricSourceStore.storageKey), before)
+    }
+
+    func testSourceAlphaStillAllowsExplicitCustomLRCLIBAndCommunitySources() throws {
+        let domain = "LyricMate.SourcePolicyTests.\(UUID())"
+        let defaults = UserDefaults(suiteName: domain)!
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let registry = LyricSourceRegistry(store: LyricSourceStore(defaults: defaults))
+        for value in [manifest(), manifest(baseURL: "https://lrclib.net/", format: .lrclib),
+                      manifest(baseURL: AMLLSource.baseURL, format: .amllTTML)] {
+            XCTAssertTrue(registry.allows(value))
+            XCTAssertNoThrow(try registry.validatePolicy(value))
+        }
+    }
+
     func testEnabledProvidersPreserveImportOrderAndIgnoreDisabledSources() throws {
         let domain = "LyricFever.RegistryTests.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!

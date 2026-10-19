@@ -36,16 +36,9 @@ struct PreviewSourcesView: View {
             }.padding()
             Form {
                 Section(L10n.text("Import compatible services")) {
-                    Text(L10n.text("Kugou, NetEase, Kuwo, QQ Music and Migu use fixed public lyric endpoints and can be enabled below. Only credential-free HTTPS JSON configurations are accepted; Liuyin/LX JavaScript is not executed. Built-in LRCLIB remains available."))
+                    Text(L10n.text("The source Alpha supports LRCLIB, local LRC, AMLL and credential-free custom HTTPS JSON. Kugou, NetEase, Kuwo, QQ Music and Migu adapters are unavailable pending access and display-rights review. Existing configurations are retained, not enabled or contacted."))
                         .font(.caption).foregroundStyle(.secondary)
                     Button(L10n.text("Import JSON file")) { importing = true }
-                    ForEach(PlatformLyricSource.allCases, id: \.rawValue) { platform in
-                        Button(L10n.text("Add %1$@ lyric source", String(describing: platform.name))) {
-                            if let data = try? JSONEncoder().encode(platform.manifest) { prepare(data) }
-                        }.disabled(registry.store.sources.contains { $0.manifest.apiFormat == platform.format })
-                    }
-                    Text(L10n.text("Lyrics only, with no audio playback or downloads. These are not official open APIs and may change or rate-limit requests. Integration does not guarantee coverage. Valid timed lyrics load by score and upgrade as results arrive; Migu has unknown durations and is preview-only, without automatic saving."))
-                        .font(.caption).foregroundStyle(.secondary)
                     Button(L10n.text("Add AMLL community fallback")) {
                         let manifest = LyricSourceManifest(schemaVersion: 1, apiVersion: 1, name: L10n.text("AMLL community library"), baseURL: AMLLSource.baseURL,
                                                            capabilities: ["search", "syncedLyrics"], auth: .init(type: "none"), format: .amllTTML)
@@ -70,26 +63,30 @@ struct PreviewSourcesView: View {
                     Link(L10n.text("Official LyricFind lyric services"), destination: URL(string: "https://www.lyricfind.com/products/lyric-display")!)
                 }
                 Section(L10n.text("Added sources")) {
-                    Text(L10n.text("Saved %1$@ sources, %2$@ enabled.", String(describing: registry.store.sources.count), String(describing: registry.store.sources.filter(\.isEnabled).count)))
+                    Text(L10n.text("Saved %1$@ sources, %2$@ enabled.", String(describing: registry.store.sources.count), String(describing: registry.store.sources.filter { $0.isEnabled && registry.allows($0.manifest) }.count)))
                         .font(.caption.monospaced())
                     if registry.store.sources.isEmpty { Text(L10n.text("No custom sources yet. Importing a configuration does not verify the service.")) }
                     ForEach(registry.store.sources) { source in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 Toggle(source.manifest.name, isOn: Binding(get: {
-                                    registry.store.sources.first(where: { $0.id == source.id })?.isEnabled ?? false
+                                    registry.allows(source.manifest) && (registry.store.sources.first(where: { $0.id == source.id })?.isEnabled ?? false)
                                 }, set: { enabled in
                                     if enabled { enabling = source; confirmEnable = true }
                                     else { mutate { try registry.store.setEnabled(source.id, false) } }
-                                })).toggleStyle(.switch)
+                                })).toggleStyle(.switch).disabled(!registry.allows(source.manifest))
                                 Spacer()
                                 Button(L10n.text("Test %1$@", String(describing: source.manifest.name))) { test(source) }
-                                    .disabled(testing != nil || testTrack.isEmpty)
+                                    .disabled(!registry.allows(source.manifest) || testing != nil || testTrack.isEmpty)
                                 Button(L10n.text("Delete %1$@", String(describing: source.manifest.name)), role: .destructive) { removing = source; confirmRemove = true }
                                     .disabled(testing == source.id)
                             }
                             Text(PlatformLyricSource(rawValue: source.manifest.apiFormat.rawValue)?.domains ?? source.manifest.baseURL)
                                 .font(.caption).textSelection(.enabled)
+                            if !registry.allows(source.manifest) {
+                                Text(L10n.text("This platform adapter is unavailable in the source Alpha. Its saved configuration is retained without network access."))
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                             Text(statuses[source.id] ?? L10n.text("Not tested. Testing checks search and lyric retrieval, not recording synchronization."))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
@@ -98,7 +95,7 @@ struct PreviewSourcesView: View {
                 Section(L10n.text("Time-bounded connection test")) {
                     TextField(L10n.text("Test song title"), text: $testTrack)
                     TextField(L10n.text("Test artist (optional)"), text: $testArtist)
-                    Text(L10n.text("Testing sends this title and artist to the service, even if the source is off. Search and lyric retrieval for one candidate share an 8-second budget (Kugou also needs index and download requests). Current lyrics are not replaced."))
+                    Text(L10n.text("Testing sends this title and artist to an allowed service, even if it is off. Search and one lyric retrieval share an 8-second budget. Unavailable platform adapters cannot be tested. Current lyrics are not replaced."))
                         .font(.caption).foregroundStyle(.secondary)
                     if testing != nil { Button(L10n.text("Cancel source test")) { testTask?.cancel() } }
                 }
@@ -143,7 +140,11 @@ struct PreviewSourcesView: View {
     }
 
     private func prepare(_ data: Data) {
-        do { pendingManifest = try LyricSourceManifest.decode(data); pendingData = data; confirmImport = true }
+        do {
+            let manifest = try LyricSourceManifest.decode(data)
+            try registry.validatePolicy(manifest)
+            pendingManifest = manifest; pendingData = data; confirmImport = true
+        }
         catch { message = error.localizedDescription }
     }
     private func requestNotice(_ manifest: LyricSourceManifest?) -> String {

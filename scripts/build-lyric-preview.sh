@@ -32,12 +32,14 @@ sources=(
     LyricFever/LyricProvider/CustomHTTP/AMLLSource.swift
     LyricFever/LyricProvider/CustomHTTP/LyricSourceStore.swift
     LyricFever/LyricProvider/CustomHTTP/LyricHTTPClient.swift
+    LyricFever/LyricProvider/CustomHTTP/LyricServiceRequestGate.swift
     LyricFever/LyricProvider/CustomHTTP/CustomHTTPSourceProvider.swift
     LyricFever/LyricProvider/CustomHTTP/LyricSourceRegistry.swift
     LyricFever/LyricProvider/CustomHTTP/PlatformLyricSource.swift
     LyricPreview/ReadOnlySpotifyReader.swift
     LyricPreview/PlaybackControlPolicy.swift
     LyricPreview/PlaybackControlDiagnostics.swift
+    LyricPreview/PreviewShareDiagnostics.swift
     LyricPreview/SpotifyPlaybackControl.swift
     LyricPreview/PlaybackReadGate.swift
     LyricPreview/PlaybackReadBudget.swift
