@@ -53,7 +53,7 @@ The app does not log in, read Spotify cookies or launch Spotify automatically. L
 
 LRCLIB requests identify this app and repository, run one at a time across clients,
 wait at least 250 ms after the previous response, and share Retry-After cooldowns.
-The project URL is an identifier, not a claim that this private Alpha is public.
+The project URL identifies this source Alpha, not service endorsement or content rights.
 
 The alpha app identifier is `local.lyricmate.alpha`, with settings in `local.lyricmate.alpha.daily.v1`. It is isolated from other editions and does not migrate their settings automatically. Existing internal directory and module names are retained to limit behavioral risk.
 

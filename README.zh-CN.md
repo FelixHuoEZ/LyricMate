@@ -51,7 +51,7 @@ python3 scripts/public-source.py archive
 
 不会自行登录、读取 Spotify Cookie 或启动 Spotify；失去播放状态后停止实时高亮。初始默认来源为 LRCLIB，另支持本地 LRC、主动添加的 AMLL 和无凭据自定义 HTTPS JSON。酷狗、网易云、酷我、QQ 音乐和咪咕因接入与展示权利待核实，在源码 Alpha 中不能启用或测试；已有配置保留但不会通过这些适配器联网。实验实现及原有历史仍在，不声称代码已彻底删除或获得授权。Musixmatch 和 LyricFind 仍未接入。
 
-LRCLIB 请求使用应用名、版本和项目链接标识；跨客户端串行调用，上次响应后至少等待 250 毫秒，并共享 Retry-After 冷却。项目链接只是请求身份，不表示当前私有 Alpha 已公开。
+LRCLIB 请求使用应用名、版本和项目链接标识；跨客户端串行调用，上次响应后至少等待 250 毫秒，并共享 Retry-After 冷却。项目链接用于标识本源码 Alpha，不表示服务方认可或内容已获授权。
 
 应用标识为 `local.lyricmate.alpha`，配置域为 `local.lyricmate.alpha.daily.v1`，与其他版本隔离，不自动迁移其配置。内部目录／模块保留部分历史命名，以降低行为变更风险。
 

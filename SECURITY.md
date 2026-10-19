@@ -9,10 +9,10 @@ or response SLA.
 For a public repository with private vulnerability reporting enabled, use
 [Report a vulnerability](https://github.com/FelixHuoEZ/LyricMate/security/advisories/new).
 Check that GitHub actually offers a private report before entering details.
-GitHub only offers this feature on public repositories. While this repository
-is private, this document prepares the channel; it does not claim the channel
-is enabled or usable. A visibility change and channel activation require a
-separate maintainer decision and read-back check.
+GitHub only offers this feature on public repositories. A link in this document
+does not claim the channel is enabled or usable: verify the live GitHub form.
+Maintainers must enable and read back the setting when publishing the repository,
+and recheck it after visibility or security-setting changes.
 
 If the private form is unavailable, do not publish vulnerability details. You
 may open a content-free issue asking the maintainer to arrange a private channel.
@@ -41,14 +41,14 @@ against a real account. Removing a Git file does not revoke a credential.
   Reports are redacted and not uploaded. A scan is not proof that no secret,
   privacy issue or license problem exists.
 
-Before approving public visibility, verify the actual GitHub private-reporting
-setting and form, repository secret protection availability, final refs and
-source archive. Installer signing/notarization remains a separate gate.
+For each source publication, verify the actual GitHub private-reporting setting
+and form, repository secret protection availability, final refs and source
+archive. Installer signing/notarization remains a separate gate.
 
 See GitHub's [reporting documentation](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-privately).
 
 ## 中文摘要
 
 漏洞不要发到公开 issue。上面的 GitHub 私密报告入口只有在公开仓库且维护者启用后
-才可使用；当前保持私有时仅准备说明，不声称已启用。入口不可用时，只能公开询问如何
-私密联系，不附漏洞细节、凭据、日志或个人数据。本项目不承诺安全响应时限。
+才可使用；文档链接不代表入口当前可用，请核对 GitHub 实际表单。入口不可用时，只能
+公开询问如何私密联系，不附漏洞细节、凭据、日志或个人数据。本项目不承诺安全响应时限。
