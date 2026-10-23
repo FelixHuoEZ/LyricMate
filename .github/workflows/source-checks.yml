@@ -13,7 +13,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, reviewed pin
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, reviewed pin
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -27,12 +27,16 @@ jobs:
           python3 scripts/check-release-safety.py
           python3 scripts/public-source.py check
       - name: Compile only, no installation or launch
-        run: bash scripts/build-lyric-preview.sh
+        run: |
+          bash scripts/build-lyric-preview.sh
+          bash scripts/build-source-alpha-acceptance.sh
+          bash scripts/build-source-alpha-acceptance.sh --permission-denied
+          bash scripts/build-source-alpha-acceptance.sh --permission-allowed
   secrets:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, reviewed pin
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, reviewed pin
         with:
           persist-credentials: false
           fetch-depth: 0

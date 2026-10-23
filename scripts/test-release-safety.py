@@ -40,7 +40,9 @@ class ReleaseSafetyTests(unittest.TestCase):
                 safety.validate_workflow(document)
 
     def test_scanner_checksum_and_required_tests_cannot_disappear(self):
-        for missing in [safety.DIGEST, 'scripts/scan-secrets.sh', 'scripts/build-lyric-preview.sh']:
+        for missing in [safety.DIGEST, 'scripts/scan-secrets.sh', 'scripts/build-lyric-preview.sh',
+                        'scripts/build-source-alpha-acceptance.sh --permission-denied',
+                        'scripts/build-source-alpha-acceptance.sh --permission-allowed']:
             document = copy.deepcopy(self.workflow)
             for job in document['jobs'].values():
                 for step in job['steps']:
@@ -48,6 +50,23 @@ class ReleaseSafetyTests(unittest.TestCase):
                         step['run'] = step['run'].replace(missing, '')
             with self.assertRaises(ValueError):
                 safety.validate_workflow(document)
+
+
+    def test_bounded_actions_update_configuration_passes(self):
+        safety.validate_dependabot(safety.load_yaml(safety.ROOT / '.github/dependabot.yml'))
+
+    def test_extra_ecosystems_and_expanded_dependency_updates_fail(self):
+        baseline = safety.load_yaml(safety.ROOT / '.github/dependabot.yml')
+        for key, value in [('directory', '/private'), ('open-pull-requests-limit', 100),
+                           ('schedule', {'interval': 'daily'}), ('registries', ['private-registry'])]:
+            document = copy.deepcopy(baseline)
+            document['updates'][0][key] = value
+            with self.assertRaises(ValueError):
+                safety.validate_dependabot(document)
+        document = copy.deepcopy(baseline)
+        document['updates'].append({'package-ecosystem': 'pip', 'directory': '/'})
+        with self.assertRaises(ValueError):
+            safety.validate_dependabot(document)
 
 
 if __name__ == '__main__':

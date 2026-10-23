@@ -6,7 +6,7 @@ import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parent.parent
-CHECKOUT = 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262'
+CHECKOUT = 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
 DIGEST = '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
 
 
@@ -54,13 +54,25 @@ def validate_workflow(document):
                      'scripts/check-localization.py', 'scripts/test-public-source.py',
                      'scripts/test-release-safety.py', 'scripts/check-release-safety.py',
                      'scripts/public-source.py check', 'scripts/build-lyric-preview.sh',
+                     'scripts/build-source-alpha-acceptance.sh',
+                     'scripts/build-source-alpha-acceptance.sh --permission-denied',
+                     'scripts/build-source-alpha-acceptance.sh --permission-allowed',
                      'scripts/scan-secrets.sh', DIGEST, 'sha256sum --check']:
         if required not in runs:
             raise ValueError('Required check or scanner checksum missing')
 
 
+def validate_dependabot(document):
+    expected = {'version': 2, 'updates': [{'package-ecosystem': 'github-actions', 'directory': '/',
+        'schedule': {'interval': 'monthly'}, 'open-pull-requests-limit': 3,
+        'commit-message': {'prefix': 'chore'}}]}
+    if document != expected:
+        raise ValueError('Dependency updates must be bounded, Actions-only review proposals')
+
+
 def check(root):
     validate_workflow(load_yaml(root / '.github/workflows/source-checks.yml'))
+    validate_dependabot(load_yaml(root / '.github/dependabot.yml'))
     bug = load_yaml(root / '.github/ISSUE_TEMPLATE/bug_report.yml')
     if {item.get('id') for item in bug['body'] if 'id' in item} != {'version', 'system', 'reproduction', 'privacy'}:
         raise ValueError('Missing minimal feedback fields')
