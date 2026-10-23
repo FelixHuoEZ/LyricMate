@@ -24,3 +24,9 @@ extension LyricProvider {
                                      currentlyPlayingArtist: request.artistName, currentAlbumName: request.albumName)
     }
 }
+
+@MainActor
+protocol LyricVersionProvider: LyricProvider {
+    var versionSourceIdentity: String { get }
+    func retrieveVersion(_ version: PreviewRecordingPreferences.VersionReference) async throws -> SongResult?
+}

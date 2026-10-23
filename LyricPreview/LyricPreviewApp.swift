@@ -520,6 +520,10 @@ struct LyricPreviewView: View {
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text(result.songName).font(.headline)
                                         Text(result.artistName).font(.subheadline)
+                                        if session.isSavedChoice(result) {
+                                            Label(L10n.text("Saved choice for this recording"), systemImage: "pin.fill")
+                                                .font(.caption2).foregroundStyle(accent)
+                                        }
                                         if !session.artistQuery.isEmpty, PreviewRecordingMatcher.artistRelation(result.artistName, session.artistQuery) == nil {
                                             Text(L10n.text("Different artist / cover: provisional match; timing may not fit this recording"))
                                                 .font(.caption2).foregroundStyle(accent)
@@ -544,6 +548,7 @@ struct LyricPreviewView: View {
                                     .background(session.selectedID == result.id ? accent.opacity(0.12) : .white.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
                                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(session.selectedID == result.id ? accent : .clear, lineWidth: 1))
                                 }.buttonStyle(.plain)
+                                    .help(L10n.text("Select and remember this version when its recording metadata can be verified. Selecting another version replaces the binding."))
                             }
                         }
                     }
@@ -622,7 +627,8 @@ struct LyricPreviewView: View {
                     HStack {
                         Text(session.memoryMessage).font(.caption2).foregroundStyle(.secondary)
                         Spacer()
-                        Button(L10n.text("Forget this track")) { session.forgetCurrentChoice() }.disabled(!session.playbackAvailable)
+                        Button(L10n.text("Use automatic selection")) { session.forgetCurrentChoice() }
+                            .disabled(!session.canUseAutomaticSelection)
                     }
                     Text(L10n.text("Positive offsets delay highlighting. Synchronization is line-by-line, not word timing, singing emphasis or breath notation.")) .font(.caption2).foregroundStyle(.secondary)
                 }.padding(24).frame(minWidth: 480)

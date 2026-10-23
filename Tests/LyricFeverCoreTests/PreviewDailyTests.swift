@@ -146,7 +146,7 @@ final class PreviewDailyTests: XCTestCase {
         let session = model([candidate(text: "Updated lyric")], preferences: preferences)
         session.updatePlayback(playback(), autoSearch: false); await session.search()?.value
         XCTAssertEqual(session.offsetMS, 0)
-        XCTAssertTrue(session.memoryMessage.contains(L10n.text("Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored.")))
+        XCTAssertTrue(session.memoryMessage.contains(L10n.text("Saved version unavailable or not revalidated. Using automatic selection for now, without the old offset; your binding is preserved.")))
         XCTAssertEqual(defaults.data(forKey: PreviewRecordingPreferences.storageKey), data)
     }
     func testUnavailablePlaybackAndManualOtherQueryCannotWriteMemory() async {
@@ -172,6 +172,30 @@ final class PreviewDailyTests: XCTestCase {
         session.sourcesChanged(); XCTAssertTrue(session.results.isEmpty); XCTAssertNil(session.activeIndex)
         XCTAssertTrue(session.memoryMessage.isEmpty)
     }
+    func testForgetImmediatelyReturnsToHighestScoreInsteadOfKeepingManualChoice() async {
+        let (defaults, suite) = isolated(); defer { defaults.removePersistentDomain(forName: suite) }
+        let preferences = PreviewRecordingPreferences(defaults: defaults)
+        let best = candidate(), alternate = candidate(album: "Other", id: "2")
+        let session = model([best, alternate], preferences: preferences)
+        session.updatePlayback(playback(), autoSearch: false)
+        await session.search()?.value
+        session.select(alternate.id)
+        XCTAssertEqual(session.selectedID, alternate.id)
+        session.forgetCurrentChoice()
+        XCTAssertEqual(session.selectedID, best.id)
+        XCTAssertTrue(preferences.entries.isEmpty)
+    }
+    func testTitleOnlyQueryCanRememberAnOtherwiseVerifiedManualChoice() async {
+        let (defaults, suite) = isolated(); defer { defaults.removePersistentDomain(forName: suite) }
+        let preferences = PreviewRecordingPreferences(defaults: defaults)
+        let value = candidate()
+        let session = model([value], preferences: preferences)
+        session.updatePlayback(playback(), autoSearch: false)
+        session.artistQuery = ""
+        await session.search()?.value
+        session.select(value.id)
+        XCTAssertEqual(preferences.entries.count, 1)
+    }
     func testRepeatedSearchMustRevalidateOldOffsetAndMessage() async throws {
         let (defaults, suite) = isolated(); defer { defaults.removePersistentDomain(forName: suite) }
         let preferences = PreviewRecordingPreferences(defaults: defaults)
@@ -189,7 +213,7 @@ final class PreviewDailyTests: XCTestCase {
         available = [candidate(text: "Changed body")]
         await session.search()?.value
         XCTAssertEqual(session.offsetMS, 0)
-        XCTAssertTrue(session.memoryMessage.contains(L10n.text("Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored.")))
+        XCTAssertTrue(session.memoryMessage.contains(L10n.text("Saved version unavailable or not revalidated. Using automatic selection for now, without the old offset; your binding is preserved.")))
         session.sourcesChanged()
         XCTAssertTrue(session.memoryMessage.isEmpty)
     }

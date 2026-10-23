@@ -66,7 +66,7 @@ enum LyricSongMatcher {
 }
 
 @MainActor
-final class CustomHTTPSourceProvider: LyricProvider {
+final class CustomHTTPSourceProvider: LyricVersionProvider {
     private struct SearchResponse: Decodable { let apiVersion: Int; let songs: [HTTPSourceSong] }
     private struct LyricsResponse: Decodable { let apiVersion: Int; let id: String; let syncedLyrics: String?; let instrumental: Bool }
     private struct LRCLIBRecord: Decodable {
@@ -98,6 +98,7 @@ final class CustomHTTPSourceProvider: LyricProvider {
 
     var requestCount: Int { client.requestCount }
     var lastHTTPReceipt: LyricHTTPReceipt? { client.lastReceipt }
+    var versionSourceIdentity: String { manifest.apiFormat.rawValue + "|" + baseURL.absoluteString }
 
     func reusesSearchLyrics(for song: HTTPSourceSong) -> Bool {
         manifest.apiFormat == .lrclib && song.hasSyncedLyrics && song.embeddedLyrics?.sourceURL == baseURL
@@ -157,7 +158,7 @@ final class CustomHTTPSourceProvider: LyricProvider {
                         let result = SongResult(lyricType: providerName, songName: song.trackName, albumName: song.albumName ?? "",
                                                   artistName: song.artistName, lyrics: lines,
                                                   durationMS: song.durationMs.map { Int($0.rounded()) },
-                                                  sourceIdentity: manifest.apiFormat.rawValue + "|" + baseURL.absoluteString,
+                                                  sourceIdentity: versionSourceIdentity,
                                                   sourceSongID: song.id, requiresManualSelection: manifest.apiFormat == .amllTTML || manifest.apiFormat == .migu)
                         results.append(result)
                         try onResult?(result)
@@ -181,6 +182,40 @@ final class CustomHTTPSourceProvider: LyricProvider {
             if results.isEmpty, let firstCandidateFailure { throw firstCandidateFailure }
             return results
         }
+    }
+
+    func retrieveVersion(_ version: PreviewRecordingPreferences.VersionReference) async throws -> SongResult? {
+        guard version.valid, version.sourceSHA256 == PreviewLocalLyrics.digest(Data(versionSourceIdentity.utf8)) else {
+            throw LyricSourceError.invalidResponse
+        }
+        try Task.checkCancellation()
+        let song: HTTPSourceSong
+        if manifest.apiFormat == .lrclib {
+            guard let id = Int(version.songID), id >= 0, String(id) == version.songID else { throw LyricSourceError.invalidResponse }
+            let data = try await client.get(endpoint("api/get/\(id)"))
+            guard let record = try? JSONDecoder().decode(LRCLIBRecord.self, from: data), record.id == id else {
+                throw LyricSourceError.invalidResponse
+            }
+            song = record.song(sourceURL: baseURL)
+        } else if platform != nil || amll != nil {
+            // Platform lyric endpoints require a freshly discovered, validated song/CDN reference.
+            let songs = try await searchCandidates(trackName: version.title, artistName: version.artist)
+            guard let found = songs.first(where: { $0.id == version.songID }) else { return nil }
+            song = found
+        } else {
+            song = HTTPSourceSong(id: version.songID, trackName: version.title, artistName: version.artist,
+                                  albumName: version.album, durationMs: Double(version.durationMS), hasSyncedLyrics: true)
+        }
+        guard song.isValid, song.hasSyncedLyrics, song.trackName == version.title,
+              song.artistName == version.artist, song.albumName ?? "" == version.album,
+              song.durationMs.map({ Int($0.rounded()) }) == version.durationMS else { return nil }
+        let lines = try await lyrics(for: song)
+        try Task.checkCancellation()
+        guard LyricFetchPipeline.isValid(lines) else { return nil }
+        return SongResult(lyricType: providerName, songName: song.trackName, albumName: song.albumName ?? "",
+                          artistName: song.artistName, lyrics: lines, durationMS: version.durationMS,
+                          sourceIdentity: versionSourceIdentity, sourceSongID: song.id,
+                          requiresManualSelection: manifest.apiFormat == .amllTTML || manifest.apiFormat == .migu)
     }
 
     func searchCandidates(trackName: String, artistName: String, spotifyTrackID: String? = nil) async throws -> [HTTPSourceSong] {

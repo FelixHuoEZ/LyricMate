@@ -123,6 +123,12 @@
 "Following Spotify read-only · Playing" = "只读跟随 Spotify · 播放中";
 "Font size" = "字号";
 "Forget this track" = "忘记此歌曲";
+"Use automatic selection" = "恢复自动选择";
+"Saved choice for this recording" = "此录音已绑定的歌词版本";
+"Select and remember this version when its recording metadata can be verified. Selecting another version replaces the binding." = "选中后，录音信息核验通过便会记住此版本；选择其他版本将更换绑定。";
+"Removed the saved choice and all version offsets for this recording; automatic score-based selection is active." = "已解除绑定并清除此录音各版本的历史偏移，恢复按评分自动选择。";
+"Could not remove the saved choice. Your previous binding was preserved." = "未能解除绑定，原有偏好已保留。";
+"Saved lyric version from %1$@ could not be retrieved: %2$@" = "未能取回 %1$@ 的绑定歌词版本：%2$@";
 "Forgot this track's selection and offset." = "已忘记此歌曲的选择和偏移。";
 "Forward 10 seconds" = "前进 10 秒";
 "Found %1$@ candidates. Check the artist, album and duration before selecting; an unverified cover is not treated as the same recording." = "已找到 %1$@ 个候选，请在左侧核对歌手、专辑和时长后选择；不会自动套用无法确认的翻唱版本。";
@@ -247,7 +253,7 @@
 "Revalidated the source, lyric fingerprint and recording; restored the selection and offset." = "已重新核验来源、歌词摘要和录音信息，恢复此歌曲的选择与偏移。";
 "Save sync diagnostics" = "保存同步诊断";
 "Saved %1$@ sources, %2$@ enabled." = "已保存 %1$@ 个源，启用 %2$@ 个。";
-"Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored." = "此录音有记忆，但候选或录音信息未通过重核验；未恢复旧偏移。";
+"Saved version unavailable or not revalidated. Using automatic selection for now, without the old offset; your binding is preserved." = "绑定版本不可用或尚未通过重核验，暂按评分自动选择且不恢复旧偏移；原绑定仍保留。";
 "Saved recording choices could not be read. No selection or offset restored; existing records were not deleted." = "录音记忆无法读取；未恢复任何选择或偏移，原记录未删除。";
 "Saved selection and offset" = "有选择与偏移记忆";
 "Saved selection restored; audible synchronization is not verified." = "已恢复用户选择；不代表听感同步已验证。";

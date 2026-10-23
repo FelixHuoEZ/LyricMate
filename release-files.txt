@@ -82,6 +82,7 @@ Tests/LyricFeverCoreTests/LyricTimelineTests.swift
 Tests/LyricFeverCoreTests/LyricsParserTests.swift
 Tests/LyricFeverCoreTests/PlatformLyricSourceTests.swift
 Tests/LyricFeverCoreTests/PreviewArtistAliasTests.swift
+Tests/LyricFeverCoreTests/PreviewBindingTests.swift
 Tests/LyricFeverCoreTests/PreviewDailyTests.swift
 Tests/LyricFeverCoreTests/PreviewFilesTests.swift
 Tests/LyricFeverCoreTests/PreviewLyricPresentationTests.swift
