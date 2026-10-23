@@ -12,12 +12,14 @@ ROOT = Path(__file__).resolve().parent.parent
 GENERATED = {'.git', '.build', '.swiftpm', 'dist', '__pycache__'}
 ROOT_FILES = {'LICENSE', 'NOTICE.md', 'README.md', 'README.zh-CN.md', 'SECURITY.md', 'Package.swift',
               'CONTRIBUTING.md', '.gitignore', 'release-files.txt'}
-DOCS = {'privacy.md', 'sources.md', 'requirements-and-design.md', 'release-checklist.md', 'app-icon.md'}
+DOCS = {'privacy.md', 'sources.md', 'requirements-and-design.md', 'release-checklist.md', 'app-icon.md',
+        'dependency-maintenance.md', 'source-alpha-acceptance.md'}
 SCRIPTS = {'build-lyric-preview.sh', 'public-source.py', 'test-public-source.py', 'check-localization.py',
            'build-lyricmate-icon.sh', 'test-lyricmate-icon.sh', 'scan-secrets.sh',
-           'check-release-safety.py', 'test-release-safety.py'}
+           'check-release-safety.py', 'test-release-safety.py', 'preview-sources.sh',
+           'build-source-alpha-acceptance.sh'}
 GITHUB_FILES = {'.github/workflows/source-checks.yml', '.github/ISSUE_TEMPLATE/bug_report.yml',
-                '.github/ISSUE_TEMPLATE/config.yml'}
+                '.github/ISSUE_TEMPLATE/config.yml', '.github/dependabot.yml'}
 ICON_ASSETS = {'LyricPreview/Resources/LyricMateIcon-1024.png',
                'LyricPreview/Resources/LyricMate.icns'}
 
@@ -43,7 +45,7 @@ def permitted(name):
     if parts[0] in {'LyricFever', 'LyricPreview'}:
         return name.endswith('.swift') or name == 'LyricPreview/Info.plist' or name in ICON_ASSETS
     return len(parts) == 3 and parts[0] == 'Tests' and parts[1] in {
-        'LyricFeverCoreTests', 'LyricPreviewPolicyTests', 'LyricMateLocalizationTests'} and name.endswith('.swift')
+        'LyricFeverCoreTests', 'LyricPreviewPolicyTests', 'LyricMateLocalizationTests', 'SourceAlphaAcceptance'} and name.endswith('.swift')
 
 def collect(root):
     root = root.resolve(strict=True)

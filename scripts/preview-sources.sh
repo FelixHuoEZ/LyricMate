@@ -1,0 +1,52 @@
+#!/bin/bash
+# Shared by production and isolated acceptance builds; neither entry point launches apps.
+sources=(
+    Localization/L10n.swift
+    LyricFever/Models/LyricLine.swift
+    LyricFever/Models/LyricTimeline.swift
+    LyricFever/Models/NetworkFetchReturn.swift
+    LyricFever/Models/FetchError.swift
+    LyricFever/Models/CoreData/SongObject.swift
+    LyricFever/Models/CoreData/SongObjectExtensions.swift
+    LyricFever/Models/LyricsParser/LyricsParser.swift
+    LyricFever/Models/LyricsParser/LyricsHeader.swift
+    LyricFever/LyricProvider/LyricProvider.swift
+    LyricFever/LyricProvider/SongResult.swift
+    LyricFever/LyricProvider/LyricFetchPipeline.swift
+    LyricFever/LyricProvider/LyricPreviewSession.swift
+    LyricFever/LyricProvider/PreviewRecordingMatcher.swift
+    LyricFever/LyricProvider/PreviewRecordingPreferences.swift
+    LyricFever/LyricProvider/PreviewLyricPresentation.swift
+    LyricFever/LyricProvider/PreviewLocalLyrics.swift
+    LyricFever/LyricProvider/PreviewBackup.swift
+    LyricFever/LyricProvider/CustomHTTP/AMLLSource.swift
+    LyricFever/LyricProvider/CustomHTTP/LyricSourceStore.swift
+    LyricFever/LyricProvider/CustomHTTP/LyricHTTPClient.swift
+    LyricFever/LyricProvider/CustomHTTP/LyricServiceRequestGate.swift
+    LyricFever/LyricProvider/CustomHTTP/CustomHTTPSourceProvider.swift
+    LyricFever/LyricProvider/CustomHTTP/LyricSourceRegistry.swift
+    LyricFever/LyricProvider/CustomHTTP/PlatformLyricSource.swift
+    LyricPreview/ReadOnlySpotifyReader.swift
+    LyricPreview/PlaybackControlPolicy.swift
+    LyricPreview/PlaybackControlDiagnostics.swift
+    LyricPreview/PreviewShareDiagnostics.swift
+    LyricPreview/SpotifyPlaybackControl.swift
+    LyricPreview/PlaybackReadGate.swift
+    LyricPreview/PlaybackReadBudget.swift
+    LyricPreview/PlaybackMetadataCache.swift
+    LyricPreview/PlaybackReadRecovery.swift
+    LyricPreview/PlaybackReadDiagnostics.swift
+    LyricPreview/PlaybackIncidentRecorder.swift
+    LyricPreview/PlaybackIncidentStore.swift
+    LyricPreview/PlaybackProcessDiscovery.swift
+    LyricPreview/LyricPreviewApp.swift
+    LyricPreview/PreviewSourcesView.swift
+    LyricPreview/PreviewFilesView.swift
+    LyricPreview/PreviewLibraryView.swift
+    LyricPreview/PreviewPresentationSettings.swift
+    LyricPreview/PreviewFloatingLayoutPolicy.swift
+    LyricPreview/PreviewLyricWrapping.swift
+    LyricPreview/PreviewWrappedTextView.swift
+    LyricPreview/PreviewFloatingPanel.swift
+    LyricPreview/PreviewDesktopPresentation.swift
+)

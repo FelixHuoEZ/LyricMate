@@ -60,10 +60,10 @@ LRCLIB 请求使用应用名、版本和项目链接标识；跨客户端串行�
 
 搜索会向所选服务发送歌名、歌手及必要候选标识；开启跟随后可能自动搜索，服务方也能获知 IP 与请求时刻。本地导入不联网。设置、歌词文件与有界诊断保存在本机。公开反馈请先用“预览脱敏诊断”：只投影步骤、状态、耗时、数字错误码及控制动作类型，不含歌曲资料、地址、进程／请求标识或绝对时间。详细诊断另行确认后才保存，仅供私密排查。两种保存都不上传。
 
-请阅读 [隐私说明](docs/privacy.md)、[来源说明](docs/sources.md)、[安全边界](SECURITY.md)、[需求与设计](docs/requirements-and-design.md) 和 [发布检查](docs/release-checklist.md)。反馈缺陷时仅提供脱敏步骤、版本和错误类别，勿附账户令牌、个人设置、播放记录或完整歌词。
+请阅读 [隔离原生验收](docs/source-alpha-acceptance.md)、[依赖安全维护](docs/dependency-maintenance.md)、[隐私说明](docs/privacy.md)、[来源说明](docs/sources.md)、[安全边界](SECURITY.md)、[需求与设计](docs/requirements-and-design.md) 和 [发布检查](docs/release-checklist.md)。反馈缺陷时仅提供脱敏步骤、版本和错误类别，勿附账户令牌、个人设置、播放记录或完整歌词。
 
 代码适用 [MIT](LICENSE) 及 [第三方声明](NOTICE.md)；歌词、歌曲、商标与服务不因代码许可证获得额外授权。公开发行与签名安装包仍需独立验收。
 
 源码构建包含 AI 辅助生成的原创[应用图标](docs/app-icon.md)，对所持权利按[图标许可](LICENSES/LyricMate-assets-MIT.txt)授权，不保证排他版权或商标权；不附带已安装应用的截图、个人设置或播放记录。
 
-见[贡献与反馈](CONTRIBUTING.md)。只读自动检查包含离线测试、构建和固定校验和的秘密扫描，不上传报告、不发布任何产物。发布前使用本机 Gitleaks 8.30.1 运行 `bash scripts/scan-secrets.sh`。工作流文件保存不代表 GitHub 托管运行已通过；私密漏洞渠道需在另行批准公开时启用并回读。
+见[贡献与反馈](CONTRIBUTING.md)。只读自动检查包含离线测试、构建和固定校验和的秘密扫描，不上传报告、不发布任何产物。发布前使用本机 Gitleaks 8.30.1 运行 `bash scripts/scan-secrets.sh`。公开源码基线 `6070e7d` 已通过 [PR #1](https://github.com/FelixHuoEZ/LyricMate/pull/1) 和[托管 CI](https://github.com/FelixHuoEZ/LyricMate/actions/runs/39917434777)；后续每次增量都需对应的 PR 检查，在 [Source checks](https://github.com/FelixHuoEZ/LyricMate/actions/workflows/source-checks.yml) 核对精确提交，不沿用旧运行结果。私密漏洞渠道已启用，外部账号举报表单仍待验收，不用维护者表单代替。按月依赖更新提议需配置合并后才生效；暂不发布安装包。

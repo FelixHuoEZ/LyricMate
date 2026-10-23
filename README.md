@@ -62,7 +62,7 @@ The alpha app identifier is `local.lyricmate.alpha`, with settings in `local.lyr
 
 Searches send the entered title, artist and necessary candidate identifiers to the selected services. Enabled following may search automatically; services also see the IP address and request time. Local imports do not use the network. Settings, lyric files and bounded diagnostics stay on this Mac unless you export or share them. Use **Preview redacted diagnostics** for public feedback: it projects only stage/status/timing/numeric errors and action types, omitting song metadata, URLs, process/request IDs and absolute timestamps. Full local diagnostics require separate confirmation and remain private. Nothing is uploaded by either action.
 
-Additional documentation, currently in Chinese: [privacy](docs/privacy.md), [source policy](docs/sources.md), [security](SECURITY.md), [requirements and design](docs/requirements-and-design.md), and [release checklist](docs/release-checklist.md). When reporting a bug, share only redacted steps, version and error categories, not account tokens, personal settings, playback records or full lyrics.
+Additional documentation: [isolated native acceptance](docs/source-alpha-acceptance.md), [dependency maintenance](docs/dependency-maintenance.md), and, in Chinese, [privacy](docs/privacy.md), [source policy](docs/sources.md), [security](SECURITY.md), [requirements and design](docs/requirements-and-design.md), and [release checklist](docs/release-checklist.md). When reporting a bug, share only redacted steps, version and error categories, not account tokens, personal settings, playback records or full lyrics.
 
 Code is covered by [MIT](LICENSE) and the [third-party notices](NOTICE.md). These licenses do not grant rights to lyrics, recordings, trademarks or external services. Public distribution and signed-installer acceptance remain separate release gates.
 
@@ -75,5 +75,10 @@ See [contributing](CONTRIBUTING.md) for minimal feedback and offline tests.
 The source-only workflow runs tests, builds and checksum-pinned secret scanning
 with read-only permissions; it neither uploads reports nor publishes anything.
 Run `bash scripts/scan-secrets.sh` with local Gitleaks 8.30.1 before a proposed
-publication. Hosted CI acceptance and private vulnerability reporting activation
-are separate checks; files existing in source do not prove either is live.
+publication. The public source baseline at `6070e7d` passed [PR #1](https://github.com/FelixHuoEZ/LyricMate/pull/1)
+and [hosted CI](https://github.com/FelixHuoEZ/LyricMate/actions/runs/39917434777).
+Every newer revision needs its own PR checks; consult [Source checks](https://github.com/FelixHuoEZ/LyricMate/actions/workflows/source-checks.yml)
+for results at the exact proposed or merged commit, rather than reusing that earlier run.
+Private vulnerability reporting is enabled; the external-account report form is still unaccepted,
+separately from the maintainer advisory form. Monthly dependency-update proposals become active
+only after the configuration is merged. No installer is published.
