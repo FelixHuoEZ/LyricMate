@@ -36,6 +36,7 @@ final class PreviewController {
     private struct ControlReadback {
         let request: PlaybackControlRequest
         var readID: UUID?
+        var recovering = false
     }
     private var controlReadback: ControlReadback?
     @ObservationIgnored private let incidentRecorder: PlaybackIncidentRecorder?
@@ -121,6 +122,7 @@ final class PreviewController {
     func requestPermission() {
         guard allowsPlaybackRead else { return }
         guard readGate.enable() else { return }
+        cancelControlReadback()
         allowsPermissionPrompt = true
         presentationSettings.resumesSpotify = true
         incidentRecorder?.endRecovery(.manualReconnect)
@@ -144,6 +146,7 @@ final class PreviewController {
 
 #if PREVIEW_ACCEPTANCE
     var acceptanceAllowsPermissionPrompt: Bool { allowsPermissionPrompt }
+    var acceptanceControlDiagnostics: [PlaybackControlDiagnostics.Entry] { controlDiagnostics.entries }
 #endif
 
     func follow() async {
@@ -159,9 +162,8 @@ final class PreviewController {
             catch { break }
         }
         if let pending = readGate.pending { incidentRecorder?.outcome(pending.token, .cancelled) }
-        if let refresh = controlReadback {
-            controlDiagnostics.mark(refresh.request.token, stage: .readback, status: .cancelled)
-            controlReadback = nil
+        if controlReadback != nil {
+            cancelControlReadback(status: .cancelled)
         }
         incidentRecorder?.endRecovery(.cancelled)
         readGate.stop()
@@ -187,15 +189,24 @@ final class PreviewController {
             } else if controlGate.isBusy {
                 // Do not enqueue reads behind a control whose result is still unknown.
             } else if readRecovery.isExpired() {
+                cancelControlReadback(status: .expired)
                 incidentRecorder?.endRecovery(.windowExpired)
                 readGate.stop()
                 connection = L10n.text("Bounded recovery reached its 10-second limit. Highlighting stopped; reconnect manually.")
                 session.updatePlayback(nil)
             } else if readRecovery.isReady(), let process = locateSpotify() {
+                if let refresh = controlReadback, refresh.request.process != process {
+                    // A new player instance cannot confirm the old instance's command.
+                    cancelControlReadback()
+                }
                 guard let request = readGate.begin() else { return }
                 if let refresh = controlReadback, refresh.readID == nil {
                     controlReadback?.readID = request.token
-                    controlDiagnostics.readbackStarted(refresh.request.token, readID: request.token)
+                    if refresh.recovering {
+                        controlDiagnostics.recoveryStarted(refresh.request.token, readID: request.token)
+                    } else {
+                        controlDiagnostics.readbackStarted(refresh.request.token, readID: request.token)
+                    }
                 }
                 readDiagnostics.begin(request.token)
                 reader.read(processID: process.processID, requiresProbe: request.requiresProbe, allowsPermissionPrompt: allowsPermissionPrompt,
@@ -216,8 +227,9 @@ final class PreviewController {
                             return
                         }
                         var readbackStatus = PlaybackControlDiagnostics.Status.failed
+                        var willRecover = false
                         defer {
-                            self.finishControlReadback(for: request.token, status: readbackStatus)
+                            self.finishControlReadback(for: request.token, status: readbackStatus, willRecover: willRecover)
                             // An older read may reach the UI after the command callback.
                             // Release it before starting the requested fresh snapshot.
                             if self.controlReadback?.readID == nil, self.controlReadback != nil {
@@ -245,6 +257,7 @@ final class PreviewController {
                                    !self.readRecovery.isExpired(at: now), self.readGate.resumeAfterTimeout(request.token) {
                                     self.connection = L10n.text("Discarded a late result. The old query ended; bounded recovery (%1$@/2), with highlighting paused.", String(describing: self.readRecovery.retryCount))
                                     incidentRecorder?.outcome(request.token, .retryScheduled)
+                                    willRecover = true
                                     return
                                 }
                             }
@@ -271,6 +284,7 @@ final class PreviewController {
                             self.session.updatePlayback(nil)
                             switch self.readRecovery.failed(error, initialRead: request.requiresProbe) {
                             case .retry(let delay):
+                                willRecover = true
                                 self.connection = L10n.text("Read-only query interrupted. Rechecking the process in %1$@ seconds (%2$@/2); highlighting paused.", String(describing: delay.components.seconds), String(describing: self.readRecovery.retryCount))
                                 incidentRecorder?.outcome(request.token, .retryScheduled)
                             case .stop:
@@ -283,19 +297,34 @@ final class PreviewController {
                 }
             }
         }
-        if !enabled, let refresh = controlReadback {
-            controlDiagnostics.mark(refresh.request.token, stage: .readbackWait, status: .unavailable)
-            controlReadback = nil
-            controlMessage = L10n.text("Command returned, but the read connection is unavailable. Playback result is unconfirmed.")
+        if !enabled, controlReadback != nil {
+            cancelControlReadback()
         }
     }
 
-    private func finishControlReadback(for readID: UUID, status: PlaybackControlDiagnostics.Status) {
+    private func cancelControlReadback(status: PlaybackControlDiagnostics.Status = .unavailable) {
+        guard let refresh = controlReadback else { return }
+        controlDiagnostics.mark(refresh.request.token, stage: refresh.recovering ? .recovery : .readbackWait, status: status)
+        controlReadback = nil
+        controlMessage = L10n.text("Command returned, but the read connection is unavailable. Playback result is unconfirmed.")
+    }
+
+    private func finishControlReadback(for readID: UUID, status: PlaybackControlDiagnostics.Status, willRecover: Bool = false) {
         guard let refresh = controlReadback, refresh.readID == readID else { return }
-        controlDiagnostics.mark(refresh.request.token, stage: .readback, status: status)
+        controlDiagnostics.mark(refresh.request.token, stage: refresh.recovering ? .recovery : .readback, status: status)
+        if willRecover, enabled {
+            // Only the existing bounded read recovery may complete this correlation. Never resend a control.
+            controlReadback?.readID = nil
+            controlReadback?.recovering = true
+            controlMessage = L10n.text("Command returned; waiting for bounded playback recovery. The result is not yet confirmed; the command was not resent.")
+            recordTraceIfChanged()
+            return
+        }
         controlReadback = nil
         controlMessage = status == .succeeded
-            ? L10n.text("Spotify playback state refreshed; controls reflect the latest read.")
+            ? (refresh.recovering
+                ? L10n.text("Spotify playback following recovered; controls reflect the latest read. The command was not resent.")
+                : L10n.text("Spotify playback state refreshed; controls reflect the latest read."))
             : L10n.text("Command returned, but state could not be read back. Playback result is unconfirmed; the command was not resent.")
         recordTraceIfChanged()
     }

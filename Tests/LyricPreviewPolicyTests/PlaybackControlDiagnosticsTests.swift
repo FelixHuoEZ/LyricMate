@@ -2,6 +2,30 @@ import XCTest
 @testable import LyricPreviewPolicy
 
 final class PlaybackControlDiagnosticsTests: XCTestCase {
+    func testRecoveryKeepsImmediateFailureAndSeparateReadIDsAndTiming() throws {
+        let log = PlaybackControlDiagnostics(logsToSystem: false)
+        let request = request()
+        log.begin(request)
+        let firstRead = UUID(), retryRead = UUID()
+        log.readbackStarted(request.token, readID: firstRead)
+        log.mark(request.token, stage: .readback, status: .failed)
+        let immediateTime = log.entries[0].totalToReadbackMS
+        log.recoveryStarted(request.token, readID: retryRead)
+        log.mark(request.token, stage: .recovery, status: .succeeded)
+        let entry = try XCTUnwrap(log.entries.first)
+        XCTAssertEqual(entry.readRequestID, firstRead)
+        XCTAssertEqual(entry.recoveryReadRequestIDs, [retryRead])
+        XCTAssertEqual(entry.totalToReadbackMS, immediateTime)
+        XCTAssertNotNil(entry.totalToRecoveryMS)
+        XCTAssertTrue(entry.events.contains { $0.stage == .readback && $0.status == .failed })
+        XCTAssertFalse(entry.events.contains { $0.stage == .readback && $0.status == .succeeded })
+        XCTAssertTrue(entry.events.contains { $0.stage == .recovery && $0.status == .succeeded })
+        for _ in 0..<10 { log.recoveryStarted(request.token, readID: UUID()) }
+        XCTAssertEqual(log.entries[0].recoveryReadRequestIDs?.count, 2)
+        log.recoveryStarted(UUID(), readID: UUID())
+        XCTAssertEqual(log.entries.count, 1)
+    }
+
     private func request(at now: ContinuousClock.Instant = .now) -> PlaybackControlRequest {
         var gate = PlaybackControlGate()
         return gate.begin(.togglePlayback, process: .init(processID: 12345, bundleIdentifier: "com.spotify.client", launchDate: nil),

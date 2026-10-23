@@ -56,6 +56,16 @@ Open one generated bundle with `open -n -a <exact-bundle-path> --args --workspac
 
 The dedicated IDs end in `.acceptance.permission.denied` and `.acceptance.permission.allowed`. These suffixes are test identities, not the actual user's decision. A previously used identity is not reset or prompted again; a reused-identity report does not satisfy the fresh-consent check. Permission entries for these test identities may remain in macOS; the test never deletes or changes another application's permission. This is [Apple's permission-preflight API](https://developer.apple.com/documentation/coreservices/3025784-aedeterminepermissiontoautomatet), not a request for song properties or a playback command.
 
+## Control Readback Recovery Regression
+
+Run `--phase recovery` with a new temporary workspace for each language (`-AppleLanguages '(en)'` or `-AppleLanguages '(zh-Hans)'`). This synthetic phase uses the production controller and serial queue, but never contacts Spotify or a live lyric service. It checks transient track changes and reply timeouts, two bounded retries, no control resend, preserved command failures, process replacement, denial, exhaustion, cancellation and manual reconnection. A successful ordinary read must not erase a genuine command error.
+
+The control remains pending only during the existing bounded read-recovery episode. A safe recovery updates the message to say that playback following recovered and the controls reflect the latest read, not that the requested command effect has been independently proven. Process identity, deadlines, maximum attempts and the single read/control queue remain in force. Detailed local diagnostics retain the initial failed readback and record recovery separately; the share projection still excludes request identifiers and song metadata.
+
+Local validation passed 419 unit tests and all 41 recovery assertions in each of English and Simplified Chinese. Localization validation and the ordinary optimized app build also passed. These are local results, not a new hosted-CI run.
+
+The local 2026-10-23 real-player check also exercised this branch with an independent test application: a real concurrent track change produced `track_changed`, then the normal recovery succeeded and the native menu showed the recovered-state message. Six uninstrumented track transitions passed without reproducing the race. The targeted real check therefore used a four-second **test-only timing barrier**, plus an explicit Spotify-native next-track click. It did not inject a snapshot, failure or HTTP response. `PREVIEW_ACCEPTANCE` alone exposes that synchronization hook; it is absent from ordinary builds and unset in synthetic checks. This is controlled-concurrency evidence, not evidence of spontaneous race frequency, audible alignment or long-term stability. Private observations, playback history and local configuration are not included here. This revision has not been pushed and does not claim a new hosted-CI result or installer release.
+
 ## Remaining Release Gates
 
 - The baseline main PR and CI passed; every closeout revision must pass its own PR and hosted CI before merge. Inspect the exact commit in [Source checks](https://github.com/FelixHuoEZ/LyricMate/actions/workflows/source-checks.yml). Local native runs do not prove CI has executed a workflow or dependency pin.

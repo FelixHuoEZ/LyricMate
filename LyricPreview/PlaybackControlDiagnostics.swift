@@ -5,7 +5,7 @@ import OSLog
 final class PlaybackControlDiagnostics: @unchecked Sendable {
     enum Stage: String, Codable, Sendable {
         case feedback, queue, worker, processValidation, trackValidation, positionRead, durationRead, seekValidation
-        case command, uiDelivery, readbackWait, readback, deadline
+        case command, uiDelivery, readbackWait, readback, recovery, deadline
     }
     enum Status: String, Codable, Sendable { case started, succeeded, failed, expired, cancelled, unavailable }
     struct Event: Codable, Sendable {
@@ -23,6 +23,8 @@ final class PlaybackControlDiagnostics: @unchecked Sendable {
         let observedAt: Date
         var readRequestID: UUID?
         var totalToReadbackMS: Int?
+        var recoveryReadRequestIDs: [UUID]?
+        var totalToRecoveryMS: Int?
         var events: [Event]
     }
     private struct Round {
@@ -82,6 +84,15 @@ final class PlaybackControlDiagnostics: @unchecked Sendable {
         append(id, stage: .readback, status: .started, now: now)
     }
 
+    func recoveryStarted(_ id: UUID, readID: UUID) {
+        lock.lock(); defer { lock.unlock() }
+        guard rounds[id] != nil else { return }
+        var reads = rounds[id]?.entry.recoveryReadRequestIDs ?? []
+        reads.append(readID)
+        rounds[id]?.entry.recoveryReadRequestIDs = Array(reads.suffix(2))
+        append(id, stage: .recovery, status: .started, now: .now)
+    }
+
     func mark(_ id: UUID, stage: Stage, status: Status, failure: PlaybackControlFailure? = nil) {
         lock.lock(); defer { lock.unlock() }
         append(id, stage: stage, status: status, failure: failure, now: .now)
@@ -94,6 +105,7 @@ final class PlaybackControlDiagnostics: @unchecked Sendable {
         let milliseconds = elapsed ?? Self.ms(round.starts[stage] ?? round.origin, now)
         if status != .started { round.starts.removeValue(forKey: stage) }
         if stage == .readback, status != .started { round.entry.totalToReadbackMS = Self.ms(round.origin, now) }
+        if stage == .recovery, status != .started { round.entry.totalToRecoveryMS = Self.ms(round.origin, now) }
         round.entry.events.append(.init(observedAt: Date(), stage: stage, status: status, elapsedMS: milliseconds,
                                         failureKind: failure?.diagnosticKind, errorCode: failure?.errorCode))
         if round.entry.events.count > 64 { round.entry.events.removeFirst(round.entry.events.count - 64) }

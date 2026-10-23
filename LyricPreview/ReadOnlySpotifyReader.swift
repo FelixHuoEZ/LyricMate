@@ -40,6 +40,10 @@ final class ReadOnlySpotifyReader: @unchecked Sendable {
     // Explicit controls share this queue; no Apple Events run concurrently with a snapshot read.
     var serializedQueue: DispatchQueue { queue }
     private let snapshotWork: SnapshotWork?
+#if PREVIEW_ACCEPTANCE
+    // Test-only synchronization point; real Apple Events, deadlines and identity checks still run.
+    var acceptanceProgress: (@Sendable (PlaybackReadDiagnostic) -> Void)?
+#endif
     private struct Metadata { let name: String; let artist: String; let album: String; let duration: Int }
     // This cache is accessed only on the serial reader queue, never on the UI actor.
     private var metadataCache = PlaybackMetadataCache<Metadata>()
@@ -64,6 +68,9 @@ final class ReadOnlySpotifyReader: @unchecked Sendable {
                     diagnostics.append(event)
                     incidentRecorder?.property(requestID, event: event)
                     progress(event)
+#if PREVIEW_ACCEPTANCE
+                    self.acceptanceProgress?(event)
+#endif
                 }
                 func deliver(_ result: Result<PlaybackSnapshot, Failure>, diagnosticFailure: PlaybackIncident.WorkerFailure? = nil) {
                     switch result {

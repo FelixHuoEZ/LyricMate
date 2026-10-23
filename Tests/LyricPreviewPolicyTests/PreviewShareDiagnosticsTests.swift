@@ -6,15 +6,17 @@ final class PreviewShareDiagnosticsTests: XCTestCase {
     func testOnlyWhitelistedFieldsAndNoIdentifiersOrAbsoluteTimeAreExported() throws {
         let date = Date(timeIntervalSince1970: 123456789)
         let id = UUID()
+        let recoveryID = UUID()
         let reads = [PlaybackReadDiagnostic(observedAt: date, stage: "track.name", status: "succeeded", elapsedMS: 12, errorCode: nil)]
         let control = PlaybackControlDiagnostics.Entry(schemaVersion: 1, requestID: id, command: .togglePlayback,
             observedAt: date, readRequestID: UUID(), totalToReadbackMS: 120,
+            recoveryReadRequestIDs: [recoveryID], totalToRecoveryMS: 1500,
             events: [.init(observedAt: date, stage: .command, status: .failed, elapsedMS: 14,
                            failureKind: "synthetic-private-detail", errorCode: -1743)])
         let text = try PreviewShareDiagnostics.preview(reads: reads, controls: [control])
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
         XCTAssertEqual(Set(json.keys), ["schemaVersion", "application", "reads", "controls"])
-        for value in [id.uuidString, "observedAt", "requestID", "readRequestID", "failureKind",
+        for value in [id.uuidString, recoveryID.uuidString, "recoveryReadRequestIDs", "observedAt", "requestID", "readRequestID", "failureKind",
                       "synthetic-private-detail", "trackID", "processID", "sourceURL"] {
             XCTAssertFalse(text.contains(value))
         }
