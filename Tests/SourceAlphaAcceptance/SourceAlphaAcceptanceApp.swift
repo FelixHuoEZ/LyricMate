@@ -8,13 +8,28 @@ private final class FixturePlayer: @unchecked Sendable {
     private var second = false
     private var playing = false
     private var commandCount = 0
+    private var readFailures: [PlaybackReadFailure] = []
+    private var afterCommandFailures: [PlaybackReadFailure] = []
+    private var commandFailure: PlaybackControlFailure?
+    private var generation: Int32 = 1
     let phase: String
     init(phase: String) { self.phase = phase }
     func switchTrack(_ second: Bool) { lock.lock(); defer { lock.unlock() }; self.second = second }
+    func arm(_ failures: [PlaybackReadFailure], commandFailure: PlaybackControlFailure? = nil) {
+        lock.lock(); defer { lock.unlock() }
+        afterCommandFailures = failures
+        self.commandFailure = commandFailure
+    }
+    func replaceProcess() { lock.lock(); defer { lock.unlock() }; generation += 1 }
+    var identity: PlaybackProcessIdentity {
+        lock.lock(); defer { lock.unlock() }
+        return .init(processID: generation, bundleIdentifier: "com.spotify.client", launchDate: nil)
+    }
     func snapshot() throws -> PlaybackSnapshot {
         lock.lock(); defer { lock.unlock() }
         if phase == "denied" { throw PlaybackReadFailure.eventFailed(-1743) }
         if phase == "missing" { throw PlaybackReadFailure.missingApplication }
+        if !readFailures.isEmpty { throw readFailures.removeFirst() }
         return .init(trackID: second ? "spotify:track:SyntheticB" : "spotify:track:SyntheticA",
                      trackName: second ? "Second Song" : "Song", artistName: "Artist", albumName: "Album",
                      durationMS: 30000, positionMS: 1500, isPlaying: playing)
@@ -23,6 +38,9 @@ private final class FixturePlayer: @unchecked Sendable {
         Thread.sleep(forTimeInterval: 0.15)
         lock.lock(); defer { lock.unlock() }
         commandCount += 1
+        if let failure = commandFailure { commandFailure = nil; throw failure }
+        readFailures = afterCommandFailures
+        afterCommandFailures = []
         switch request.command {
         case .togglePlayback: playing.toggle()
         case .nextTrack: second = true
@@ -101,7 +119,7 @@ private final class AcceptanceRun {
             return args[index + 1]
         }
         phase = value("--phase") ?? "seed"
-        guard ["seed", "restore", "denied", "missing"].contains(phase), let path = value("--workspace") else {
+        guard ["seed", "restore", "denied", "missing", "recovery"].contains(phase), let path = value("--workspace") else {
             fatalError("Use a documented phase and a new temporary acceptance workspace")
         }
         let root = URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL.resolvingSymlinksInPath()
@@ -129,7 +147,7 @@ private final class AcceptanceRun {
         let control = SpotifyPlaybackControl(queue: reader.serializedQueue, work: { try fixture.command($0) })
         let controller = PreviewController(defaults: defaults, builtin: provider,
             localDirectory: root.appendingPathComponent("local-lyrics", isDirectory: true), reader: reader,
-            processLookup: { .init(processID: 1, bundleIdentifier: "com.spotify.client", launchDate: nil) },
+            processLookup: { fixture.identity },
             allowsPlaybackControl: true, playbackControl: control,
             makeProvider: { manifest in
                 try CustomHTTPSourceProvider(manifest: manifest, client: LyricHTTPClient(session: session), requestDelay: 0)
@@ -190,7 +208,9 @@ private final class AcceptanceRun {
             if phase == "restore" {
                 try check("restart-does-not-prompt", !controller.acceptanceAllowsPermissionPrompt)
             } else { controller.requestPermission() }
-            if phase == "denied" || phase == "missing" {
+            if phase == "recovery" {
+                try await recovery()
+            } else if phase == "denied" || phase == "missing" {
                 try await wait("failure-stops-following", until: { !self.controller.enabled })
                 try check("unavailable-does-not-highlight", !controller.session.playbackAvailable && controller.session.activeIndex == nil)
                 try check("unavailable-controls-disabled", !controller.canControlPlayback && player.commands == 0)
@@ -249,6 +269,73 @@ private final class AcceptanceRun {
         controller.performPlaybackCommand(command)
         try check("command-immediate-feedback", controller.controlBusy && controller.pendingControlCommand == command && !controller.controlMessage.isEmpty)
         try await wait("command-safe-readback-completes", until: { !self.controller.controlBusy })
+    }
+
+    private func recovery() async throws {
+        try await wait("recovery-initial-read", until: { self.controller.canControlPlayback })
+        let recoveredMessage = L10n.text("Spotify playback following recovered; controls reflect the latest read. The command was not resent.")
+        func start(_ failures: [PlaybackReadFailure]) async throws {
+            player.arm(failures)
+            controller.performPlaybackCommand(.nextTrack)
+            try await wait("transient-read-discarded", until: { !self.controller.session.playbackAvailable })
+        }
+        func reconnect() async throws {
+            controller.requestPermission()
+            try await wait("manual-reconnect", until: { self.controller.canControlPlayback })
+        }
+        try await start([.trackChanged, .bridgeUnavailable])
+        try check("control-waits-for-bounded-recovery", controller.controlBusy && !controller.canControlPlayback)
+        controller.performPlaybackCommand(.nextTrack)
+        try await wait("safe-recovery-updates-message", until: {
+            self.controller.session.playbackAvailable && !self.controller.controlBusy && self.controller.controlMessage == recoveredMessage
+        })
+        try check("no-resend-or-extra-click", player.commands == 1)
+        try check("recovered-new-track", controller.session.playback?.trackID == "spotify:track:SyntheticB")
+        let events = controller.acceptanceControlDiagnostics.last?.events ?? []
+        try check("failed-readback-retained", events.contains { $0.stage == .readback && $0.status == .failed })
+        try check("recovery-recorded-separately", events.contains { $0.stage == .recovery && $0.status == .succeeded })
+
+        try await start([.eventFailed(-1712)])
+        try await wait("transient-event-timeout-recovers", until: {
+            self.controller.session.playbackAvailable && !self.controller.controlBusy && self.controller.controlMessage == recoveredMessage
+        })
+        try check("timeout-does-not-resend", player.commands == 2)
+
+        player.arm([], commandFailure: .event(-1743))
+        try await command(.togglePlayback)
+        let failureMessage = controller.controlMessage
+        try check("control-denial-message-preserved", failureMessage == PlaybackControlFailure.event(-1743).message)
+        try await Task.sleep(for: .milliseconds(1100))
+        try check("ordinary-read-preserves-command-failure", controller.controlMessage == failureMessage && failureMessage != recoveredMessage)
+        try await command(.togglePlayback)
+        try check("new-command-replaces-old-message", controller.controlMessage != failureMessage && controller.session.playback?.isPlaying == true)
+
+        try await start([.trackChanged])
+        player.replaceProcess()
+        try await wait("replacement-process-read", until: { self.controller.session.playbackAvailable && !self.controller.controlBusy })
+        try check("replacement-process-not-confirmed", controller.controlMessage != recoveredMessage)
+
+        try await start([.trackChanged, .eventFailed(-1743)])
+        try await wait("denial-stops-recovery", until: { !self.controller.enabled && !self.controller.controlBusy })
+        try check("denial-not-confirmed", controller.controlMessage != recoveredMessage)
+        try await reconnect()
+        try check("reconnect-does-not-confirm-old-command", controller.controlMessage != recoveredMessage)
+
+        try await start([.trackChanged, .trackChanged, .trackChanged])
+        try await wait("recovery-budget-exhausted", until: { !self.controller.enabled && !self.controller.controlBusy })
+        try check("exhaustion-not-confirmed", controller.controlMessage != recoveredMessage)
+        try await reconnect()
+        try await start([.trackChanged])
+        desktop.stopFollowing()
+        try await wait("cancel-clears-readback", until: { !self.controller.enabled && !self.controller.controlBusy })
+        desktop.startFollowing()
+        try await reconnect()
+        try check("cancelled-command-not-confirmed", controller.controlMessage != recoveredMessage)
+        try check("cancelled-recovery-diagnostic", controller.acceptanceControlDiagnostics.last?.events.contains {
+            $0.stage == .recovery && $0.status == .cancelled
+        } == true)
+        try check("exact-command-count", player.commands == 8)
+        controller.exportTrace(to: workspace.appendingPathComponent("diagnostics"))
     }
 
     private func seed() async throws {
