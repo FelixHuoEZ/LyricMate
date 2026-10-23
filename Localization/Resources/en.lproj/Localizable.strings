@@ -123,6 +123,12 @@
 "Following Spotify read-only · Playing" = "Following Spotify read-only · Playing";
 "Font size" = "Font size";
 "Forget this track" = "Forget this track";
+"Use automatic selection" = "Use automatic selection";
+"Saved choice for this recording" = "Saved choice for this recording";
+"Select and remember this version when its recording metadata can be verified. Selecting another version replaces the binding." = "Select and remember this version when its recording metadata can be verified. Selecting another version replaces the binding.";
+"Removed the saved choice and all version offsets for this recording; automatic score-based selection is active." = "Removed the saved choice and all version offsets for this recording; automatic score-based selection is active.";
+"Could not remove the saved choice. Your previous binding was preserved." = "Could not remove the saved choice. Your previous binding was preserved.";
+"Saved lyric version from %1$@ could not be retrieved: %2$@" = "Saved lyric version from %1$@ could not be retrieved: %2$@";
 "Forgot this track's selection and offset." = "Forgot this track's selection and offset.";
 "Forward 10 seconds" = "Forward 10 seconds";
 "Found %1$@ candidates. Check the artist, album and duration before selecting; an unverified cover is not treated as the same recording." = "Found %1$@ candidates. Check the artist, album and duration before selecting; an unverified cover is not treated as the same recording.";
@@ -247,7 +253,7 @@
 "Revalidated the source, lyric fingerprint and recording; restored the selection and offset." = "Revalidated the source, lyric fingerprint and recording; restored the selection and offset.";
 "Save sync diagnostics" = "Save sync diagnostics";
 "Saved %1$@ sources, %2$@ enabled." = "Saved %1$@ sources, %2$@ enabled.";
-"Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored." = "Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored.";
+"Saved version unavailable or not revalidated. Using automatic selection for now, without the old offset; your binding is preserved." = "Saved version unavailable or not revalidated. Using automatic selection for now, without the old offset; your binding is preserved.";
 "Saved recording choices could not be read. No selection or offset restored; existing records were not deleted." = "Saved recording choices could not be read. No selection or offset restored; existing records were not deleted.";
 "Saved selection and offset" = "Saved selection and offset";
 "Saved selection restored; audible synchronization is not verified." = "Saved selection restored; audible synchronization is not verified.";

@@ -14,6 +14,7 @@ This is a standalone source alpha, not an official Lyric Fever release or a prod
 
 - Menu-bar lyrics, transparent two-line overlay, smart wrapping, upward line transitions and a singing countdown.
 - Optional artist input, title-only fallback, match scores, progressive candidate upgrades, manual selection and revalidated offsets.
+- Remember a verified lyric version per Spotify recording and a separate offset for each recording/version pair. Saved choices take priority over match scores after revalidation; use automatic selection to clear the binding and its version offsets.
 - Play/pause, previous/next and menu-based seeking. Floating controls appear on hover and stay hidden when the window is locked for click-through.
 - Local LRC files, saved settings, configuration backups and bounded local diagnostics. No lyric database or account credentials are bundled.
 

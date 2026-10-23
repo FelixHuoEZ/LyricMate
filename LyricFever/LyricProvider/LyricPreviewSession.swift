@@ -139,6 +139,21 @@ final class LyricPreviewSession {
     }
 
     var selected: SongResult? { results.first { $0.id == selectedID } }
+    private var queryMatchesPlayback: Bool {
+        guard playbackAvailable, let playback else { return false }
+        let artist = artistQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        return PreviewRecordingMatcher.normalized(trackQuery) == PreviewRecordingMatcher.normalized(playback.trackName)
+            && (artist.isEmpty || PreviewRecordingMatcher.artistRelation(artist, playback.artistName) == .normalized)
+    }
+    var canUseAutomaticSelection: Bool {
+        queryMatchesPlayback && (selectionOrigin == .manual || selectionOrigin == .remembered
+            || preferences?.entries.contains(where: { $0.recording.id == playback?.trackID }) == true
+            || preferences?.offsets.contains(where: { $0.recording.id == playback?.trackID }) == true)
+    }
+    func isSavedChoice(_ candidate: SongResult) -> Bool {
+        guard queryMatchesPlayback, let playback else { return false }
+        return preferences?.restoration(in: [candidate], playback: playback) != nil
+    }
     var unselectedLyricsTitle: String {
         if isSearching { return L10n.text("Finding lyrics") }
         if !results.isEmpty { return L10n.text("Lyrics found; check the recording version") }
@@ -234,14 +249,25 @@ final class LyricPreviewSession {
         let task = Task { @MainActor [self] in
             defer { if generation == capturedGeneration { isSearching = false } }
             do {
-                try await PreviewSearchPipeline.search(track: track, artist: artist, providers: providerSnapshot?() ?? providers, playback: snapshot, validate: {
+                let enabled = providerSnapshot?() ?? providers
+                let blockedSources = try await retrieveSavedVersion(playback: snapshot, providers: enabled, generation: capturedGeneration)
+                guard generation == capturedGeneration else { return }
+                if let snapshot, queryMatchesPlayback, preferences?.entries.contains(where: { $0.recording.id == snapshot.trackID }) == true,
+                   preferences?.restoration(in: results, playback: snapshot) == nil {
+                    memoryMessage = L10n.text("Saved version unavailable or not revalidated. Using automatic selection for now, without the old offset; your binding is preserved.")
+                }
+                let searchable = enabled.filter {
+                    guard let versioned = $0 as? LyricVersionProvider else { return true }
+                    return !blockedSources.contains(PreviewLocalLyrics.digest(Data(versioned.versionSourceIdentity.utf8)))
+                }
+                try await PreviewSearchPipeline.search(track: track, artist: artist, providers: searchable, playback: snapshot, validate: {
                     guard self.generation == capturedGeneration else { throw FetchError.staleTrack }
                 }, note: { message in
                     matchingMessage += (matchingMessage.isEmpty ? "" : "\n") + message
                 }, failure: { provider, error in
                     sourceErrors.append("\(provider.providerName): \(error.localizedDescription)")
                 }, append: { values in
-                    self.results.append(contentsOf: values)
+                    self.appendCandidates(values)
                     self.updateAutomaticSelection(playback: snapshot, track: track, artist: artist, finished: false)
                 })
                 guard generation == capturedGeneration else { return }
@@ -254,7 +280,7 @@ final class LyricPreviewSession {
                     updateAutomaticSelection(playback: snapshot, track: track, artist: artist, finished: true)
                 }
                 if let snapshot, memoryMessage.isEmpty, preferences?.entries.contains(where: { $0.recording.id == snapshot.trackID }) == true {
-                    memoryMessage = L10n.text("Saved choice exists, but the candidate or recording could not be revalidated; the previous offset was not restored.")
+                    memoryMessage = L10n.text("Saved version unavailable or not revalidated. Using automatic selection for now, without the old offset; your binding is preserved.")
                 }
             } catch {
                 guard generation == capturedGeneration else { return }
@@ -265,6 +291,47 @@ final class LyricPreviewSession {
         return task
     }
 
+    private func appendCandidates(_ values: [SongResult]) {
+        for value in values {
+            if results.contains(where: { $0.id == value.id }) { continue }
+            if let source = value.sourceIdentity, let id = value.sourceSongID {
+                let sameID = results.filter { $0.sourceIdentity == source && $0.sourceSongID == id }
+                if !sameID.isEmpty, let fingerprint = PreviewRecordingPreferences.fingerprint(value),
+                   sameID.contains(where: { PreviewRecordingPreferences.fingerprint($0) == fingerprint }) { continue }
+            }
+            results.append(value)
+        }
+    }
+
+    private func retrieveSavedVersion(playback: PlaybackSnapshot?, providers: [LyricProvider], generation expected: UUID) async throws -> Set<String> {
+        guard queryMatchesPlayback, let playback, let entry = preferences?.entry(for: playback),
+              let version = entry.version, preferences?.restoration(in: results, playback: playback) == nil else { return [] }
+        let matching = providers.compactMap { $0 as? LyricVersionProvider }.filter {
+            PreviewLocalLyrics.digest(Data($0.versionSourceIdentity.utf8)) == version.sourceSHA256
+        }
+        // A disabled, missing or ambiguous source is never re-enabled by a saved preference.
+        guard matching.count == 1, let provider = matching.first else { return [] }
+        do {
+            let candidate = try await withLyricDeadline(seconds: 8) { try await provider.retrieveVersion(version) }
+            try Task.checkCancellation()
+            guard generation == expected else { throw FetchError.staleTrack }
+            guard let candidate, preferences?.entry(for: playback) == entry,
+                  PreviewRecordingMatcher.eligibleForMemory(candidate, playback: playback),
+                  PreviewRecordingPreferences.fingerprint(candidate) == entry.candidateSHA256 else { return [] }
+            appendCandidates([candidate])
+            updateAutomaticSelection(playback: playback, track: trackQuery.trimmingCharacters(in: .whitespacesAndNewlines),
+                                     artist: artistQuery.trimmingCharacters(in: .whitespacesAndNewlines), finished: false)
+        } catch {
+            try Task.checkCancellation()
+            guard generation == expected else { throw FetchError.staleTrack }
+            if error is CancellationError || (error as? URLError)?.code == .cancelled { throw CancellationError() }
+            sourceErrors.append(L10n.text("Saved lyric version from %1$@ could not be retrieved: %2$@", provider.providerName, error.localizedDescription))
+            if error as? LyricSourceError == .rateLimited { return [version.sourceSHA256] }
+            if let error = error as? LyricSourceError, case .httpStatus(let code) = error, code == 401 || code == 403 { return [version.sourceSHA256] }
+        }
+        return []
+    }
+
     func select(_ id: UUID, remember: Bool = true) {
         guard results.contains(where: { $0.id == id }) else { return }
         applySelection(id, origin: .manual)
@@ -272,11 +339,11 @@ final class LyricPreviewSession {
     }
 
     private func applySelection(_ id: UUID, origin: SelectionOrigin) {
-        guard results.contains(where: { $0.id == id }) else { return }
+        guard let candidate = results.first(where: { $0.id == id }) else { return }
         selectedID = id
         selectionOrigin = origin
         suppressMemoryWrites = true
-        offsetMS = 0
+        offsetMS = queryMatchesPlayback ? playback.flatMap { preferences?.offset(for: candidate, playback: $0) } ?? 0 : 0
         suppressMemoryWrites = false
         status = L10n.text("Candidate selected; verify the recording and audible synchronization.")
     }
@@ -347,16 +414,21 @@ final class LyricPreviewSession {
     }
 
     func forgetCurrentChoice() {
-        guard let id = playback?.trackID else { return }
-        preferences?.forget(id)
+        guard queryMatchesPlayback, let playback else { return }
+        guard preferences?.forget(playback.trackID) != false else {
+            memoryMessage = L10n.text("Could not remove the saved choice. Your previous binding was preserved.")
+            return
+        }
+        selectedID = nil; selectionOrigin = nil
         suppressMemoryWrites = true; offsetMS = 0; suppressMemoryWrites = false
-        memoryMessage = L10n.text("Forgot this track's selection and offset.")
+        updateAutomaticSelection(playback: playback, track: trackQuery.trimmingCharacters(in: .whitespacesAndNewlines),
+                                 artist: artistQuery.trimmingCharacters(in: .whitespacesAndNewlines), finished: !isSearching)
+        if selectedID == nil { status = isSearching ? L10n.text("Searching...") : L10n.text("No timed lyrics found.") }
+        memoryMessage = L10n.text("Removed the saved choice and all version offsets for this recording; automatic score-based selection is active.")
     }
 
     private func rememberSelection() {
-        guard let preferences, playbackAvailable, let playback, let selected,
-              PreviewRecordingMatcher.normalized(trackQuery) == PreviewRecordingMatcher.normalized(playback.trackName),
-              PreviewRecordingMatcher.artistRelation(artistQuery, playback.artistName) == .normalized else { return }
+        guard let preferences, playbackAvailable, let playback, let selected, queryMatchesPlayback else { return }
         memoryMessage = preferences.remember(selected, playback: playback, offsetMS: offsetMS)
             ? L10n.text("Saved the selection and offset for this Spotify recording, without lyric text.")
             : L10n.text("Candidate identity or duration is missing, or the recording differs. Preview only; no choice saved.")

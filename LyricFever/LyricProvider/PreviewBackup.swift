@@ -6,6 +6,11 @@ enum PreviewBackup {
         let application: String
         let sources: [LyricSourceConfiguration]
         let preferences: [PreviewRecordingPreferences.Entry]
+        let offsets: [PreviewRecordingPreferences.PairOffset]?
+        init(application: String, sources: [LyricSourceConfiguration], preferences: [PreviewRecordingPreferences.Entry],
+             offsets: [PreviewRecordingPreferences.PairOffset]? = nil) {
+            self.application = application; self.sources = sources; self.preferences = preferences; self.offsets = offsets
+        }
     }
     struct Document: Codable {
         let schemaVersion: Int
@@ -24,7 +29,8 @@ enum PreviewBackup {
     }
     static func export(sources: LyricSourceStore, preferences: PreviewRecordingPreferences) throws -> Data {
         guard sources.loadError == nil, preferences.loadError == nil else { throw LyricSourceError.invalidResponse }
-        let payload = Payload(application: "local.lyricmate.alpha", sources: sources.sources, preferences: preferences.entries)
+        let payload = Payload(application: "local.lyricmate.alpha", sources: sources.sources, preferences: preferences.entries,
+                              offsets: preferences.offsets.isEmpty ? nil : preferences.offsets)
         try validate(payload)
         let data = try encoded(Document(schemaVersion: 1, payload: payload, sha256: PreviewLocalLyrics.digest(encoded(payload))))
         guard data.count <= maximumBytes else { throw LyricSourceError.responseTooLarge }
@@ -32,9 +38,8 @@ enum PreviewBackup {
     }
     private static func validate(_ payload: Payload) throws {
         guard payload.application == "local.lyricmate.alpha", payload.sources.count <= 16,
-              Set(payload.sources.map(\.id)).count == payload.sources.count,
-              payload.preferences.count <= 200, payload.preferences.allSatisfy(\.valid),
-              Set(payload.preferences.map { $0.recording.id }).count == payload.preferences.count else { throw LyricSourceError.invalidResponse }
+              Set(payload.sources.map(\.id)).count == payload.sources.count else { throw LyricSourceError.invalidResponse }
+        try PreviewRecordingPreferences.validate(payload.preferences, offsets: payload.offsets ?? [])
         var services = Set<String>()
         for source in payload.sources {
             let url = try source.manifest.validatedURL()
@@ -49,7 +54,7 @@ enum PreviewBackup {
     static func decode(_ data: Data) throws -> Payload {
         guard data.count <= maximumBytes else { throw LyricSourceError.responseTooLarge }
         let root = try keys(JSONSerialization.jsonObject(with: data), allowed: ["schemaVersion", "payload", "sha256"])
-        let payload = try keys(root["payload"], allowed: ["application", "sources", "preferences"])
+        let payload = try keys(root["payload"], allowed: ["application", "sources", "preferences", "offsets"])
         guard let sources = payload["sources"] as? [Any], let entries = payload["preferences"] as? [Any] else { throw LyricSourceError.invalidResponse }
         for value in sources {
             let source = try keys(value, allowed: ["id", "manifest", "isEnabled"])
@@ -57,8 +62,18 @@ enum PreviewBackup {
             _ = try keys(manifest["auth"], allowed: ["type"])
         }
         for value in entries {
-            let entry = try keys(value, allowed: ["recording", "candidateSHA256", "offsetMS"])
+            let entry = try keys(value, allowed: ["recording", "candidateSHA256", "offsetMS", "version"])
             _ = try keys(entry["recording"], allowed: ["id", "title", "artist", "album", "durationMS"])
+            if let version = entry["version"] {
+                _ = try keys(version, allowed: ["sourceSHA256", "songID", "title", "artist", "album", "durationMS"])
+            }
+        }
+        if let value = payload["offsets"] {
+            guard let offsets = value as? [Any] else { throw LyricSourceError.invalidResponse }
+            for value in offsets {
+                let offset = try keys(value, allowed: ["recording", "candidateSHA256", "offsetMS"])
+                _ = try keys(offset["recording"], allowed: ["id", "title", "artist", "album", "durationMS"])
+            }
         }
         let document = try JSONDecoder().decode(Document.self, from: data)
         guard document.schemaVersion == 1, document.sha256 == PreviewLocalLyrics.digest(try encoded(document.payload)) else { throw LyricSourceError.invalidResponse }
@@ -76,10 +91,10 @@ enum PreviewBackup {
         // Full prevalidation precedes both writes; rollback preserves a coherent pair on any validation failure.
         do {
             try sources.replaceValidated(disabled)
-            try preferences.replaceValidated(plan.payload.preferences)
+            try preferences.replaceValidated(plan.payload.preferences, offsets: plan.payload.offsets)
         } catch {
             let old = try decode(plan.previous)
-            try sources.replaceValidated(old.sources); try preferences.replaceValidated(old.preferences)
+            try sources.replaceValidated(old.sources); try preferences.replaceValidated(old.preferences, offsets: old.offsets)
             throw error
         }
     }
